@@ -6,10 +6,56 @@ import re
 
 import xml.dom as xd
 import xml.dom.minidom as xdm
+import xml.sax as xs
+import xml.sax.handler as xsh
+import xml.sax.saxutils as xss
+from xml.sax.saxutils import quoteattr
 
 import bridge
 
+try:
+    import cStringIO as StringIO
+except ImportError:
+    import StringIO
+
 xml_declaration_rx = re.compile(r"^<\?xml.+?\?>")
+
+# see http://sourceforge.net/tracker/index.php?func=detail&aid=847665&group_id=5470&atid=105470
+class XMLGeneratorFixed(xss.XMLGenerator):
+    def startElementNS(self, name, qname, attrs):
+        if name[0] is None or self._current_context[name[0]] is None:
+            # if the name was not namespace-scoped, use the unqualified part
+            name = name[1]
+        else:
+            # else try to restore the original prefix from the namespace
+            name = "%s:%s" % (self._current_context[name[0]], name[1])
+        self._out.write('<' + name)
+
+        for prefix, uri in self._undeclared_ns_maps:
+            if prefix:
+                self._out.write(' xmlns:%s="%s"' % (prefix, uri))
+            else:
+                self._out.write(' xmlns="%s"' % uri)
+        self._undeclared_ns_maps = []
+
+        for (name, value) in attrs.items():
+            if name[0] is None:
+                name = name[1]
+            elif name[0] == xd.XML_NAMESPACE:
+                name = "xml:%s" % name[1]
+            elif name[0] == xd.XMLNS_NAMESPACE:
+                name = "xmlns:%s" % name[1]
+            else:
+                name = "%s:%s" % (self._current_context[name[0]], name[1])
+            self._out.write(' %s=%s' % (name, quoteattr(value)))
+        self._out.write('>')
+
+    def endElementNS(self, name, qname):
+        if name[0] is None or self._current_context[name[0]] is None:
+            name = name[1]
+        else:
+            name = self._current_context[name[0]] + ":" + name[1]
+        self._out.write('</%s>' % name)
 
 class Parser(object):
     def __deserialize_fragment(self, current, parent):
@@ -38,66 +84,77 @@ class Parser(object):
             return "%s:%s" % (prefix, name)
         return name
 
-    def __attrs(self, node, element):
-        for attr in element.xml_attributes:
-            name = attr.name
-            if attr.xmlns:
-                node.setAttributeNS(attr.xmlns,
-                                    self.__qname(name, attr.prefix),
-                                    attr.xml_text)
-            else:
-                node.setAttribute(name, attr.xml_text)
+    def __attrs(self, node):
+        attrs = {}
+        for attr in node.xml_attributes:
+            attrns = attr.xml_ns
+            if attrns:
+                attrns = attrns.encode(attr.encoding)
+            name = attr.xml_name.encode(attr.encoding)
+            attrs[(attrns, name)] = attr.xml_text or ''
 
-    def __start_element(self, doc, element):
-        if element.xmlns:
-            return doc.createElementNS(element.xmlns, self.__qname(element.name, element.prefix))
-        else:
-            return doc.createElement(element.name)
+        return attrs
 
-    def __serialize_element(self, root, node, element):
-        self.__attrs(node, element)
+    def __serialize_element(self, handler, element):
         children = element.xml_children
         for child in children:
             if isinstance(child, basestring):
-                node.appendChild(root.createTextNode(child))
+                handler.characters(child)
             elif isinstance(child, bridge.Element):
-                child_node = self.__start_element(root, child)
+                prefix = ns = name = None
+                if child.xml_prefix:
+                    prefix = child.xml_prefix.encode(child.encoding)
+                if child.xml_ns:
+                    ns = child.xml_ns.encode(child.encoding)
                 
+                name = child.xml_name.encode(child.encoding)
+                qname = self.__qname(name, prefix=prefix)
+
+                attrs = self.__attrs(child)
+                if ns and ns != child.xml_root.xml_ns:
+                    handler.startPrefixMapping(prefix, ns)
+                handler.startElementNS((ns, name), qname, attrs)
+            
                 if child.xml_text:
-                    child_node.appendChild(root.createTextNode(child.xml_text))
+                    handler.characters(str(child))
                     
-                self.__serialize_element(root, child_node, child)
-
-                node.appendChild(child_node)
+                self.__serialize_element(handler, child)
                 
-    def __start_document(self, root):
-        if root.xmlns:
-            return '<%s:%s xmlns:%s="%s" />' % (root.prefix, root.name,
-                                                root.prefix, root.xmlns)
-        return '<%s />' % (root.name, )
-    
+                handler.endElementNS((ns, name), qname)
+                if ns and ns != child.xml_root.xml_ns:
+                    handler.endPrefixMapping(prefix)
+
+    def __start_root_element(self, handler, root):
+        attrs = self.__attrs(root)
+        if root.xml_ns:
+            handler.startPrefixMapping(root.xml_prefix, root.xml_ns)
+        handler.startElementNS((root.xml_ns, root.xml_name), self.__qname(root.xml_name, root.xml_prefix), attrs)
+        if root.xml_text:
+            handler.characters(str(root.xml_text))
+            
+    def __end_root_element(self, handler, root):
+        handler.endElementNS((root.xml_ns, root.xml_name), self.__qname(root.xml_name, root.xml_prefix))
+        if root.xml_ns:
+            handler.endPrefixMapping(root.xml_prefix)
+
     def serialize(self, document, indent=False, encoding=bridge.ENCODING, prefixes=None, omit_declaration=False):
-        doc = self.__start_document(document)
-        doc = xdm.parseString(doc)
-        if document.xml_text:
-            doc.documentElement.appendChild(doc.createTextNode(document.xml_text))
-            
-        self.__serialize_element(doc, doc.documentElement, document)
+        parser = xs.make_parser()
+        parser.setFeature(xs.handler.feature_namespaces, True)
+        s = StringIO.StringIO()
+        handler = XMLGeneratorFixed(s)
+        parser.setContentHandler(handler)
 
-        if indent:
-            result = doc.toprettyxml(encoding=encoding)
+        if not omit_declaration:
+            handler.startDocument()
+        self.__start_root_element(handler, document)
+        self.__serialize_element(handler, document)
+        self.__end_root_element(handler, document)
+        if not omit_declaration:
+            handler.endDocument()
 
-        result = doc.toxml(encoding=encoding)
-
-        if doc:
-            doc.unlink()
-
-        if omit_declaration:
-            s = xml_declaration_rx.search(result)
-            if s:
-                result = result[s.end():]
-            
-        return result
+        content = s.getvalue()
+        s.close()
+        return content
 
     def deserialize(self, source, prefixes=None, strict=False):
         doc = None
