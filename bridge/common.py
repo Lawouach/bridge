@@ -23,4 +23,5 @@ atom_as_attr = {ATOM10_NS: ['id', 'title', 'updated', 'published', 'icon', 'logo
 atom_as_list = {ATOM10_NS: ['author', 'contributor', 'category', 'link', 'entry'],
                 ATOMPUB_NS: ['collection', 'workspace', 'categories']}
 
-atom_attribute_of_element = {None: ['type', 'term', 'href', 'rel']}
+atom_attribute_of_element = {None: ['type', 'term', 'href', 'rel', 'scheme', 'label',
+                                    'title', 'length', 'hreflang' 'src']}
