@@ -89,6 +89,9 @@ class Parser(object):
 
         result = doc.toxml(encoding=encoding)
 
+        if doc:
+            doc.unlink()
+
         if omit_declaration:
             s = xml_declaration_rx.search(result)
             if s:

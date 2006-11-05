@@ -44,6 +44,7 @@ class Attribute(object):
     """
 
     encoding = ENCODING
+    as_attribute_of_element = None
     
     def __init__(self, name=None, value=None, prefix=None, namespace=None, parent=None):
         """
@@ -68,6 +69,11 @@ class Attribute(object):
         if self.parent:
             self.parent.xml_attributes.append(self)
 
+            attr_of_element = self.as_attribute_of_element or {}
+            attrs = attr_of_element.get(self.xmlns, [])
+            if self.name in attrs:
+                setattr(self.parent, self.name, self.xml_text)
+
     def __unicode__(self):
         return self.xml_text
     
@@ -85,8 +91,8 @@ class Element(object):
 
     parser = bridge.parser.bridge_default.Parser
     encoding = ENCODING
-    as_list = {}
-    as_attribute = {}
+    as_list = None
+    as_attribute = None
     
     def __init__(self, name=None, content=None, attributes=None, prefix=None, namespace=None, parent=None):
         """
@@ -122,8 +128,11 @@ class Element(object):
         if self.parent:
             self.parent.xml_children.append(self)
 
-            as_attr_elts = self.as_attribute.get(self.xmlns, [])
-            as_list_elts = self.as_list.get(self.xmlns, [])
+            as_attr_elts = self.as_attribute or {}
+            as_list_elts = self.as_list or {}
+            
+            as_attr_elts = as_attr_elts.get(self.xmlns, [])
+            as_list_elts = as_list_elts.get(self.xmlns, [])
 
             if self.name in as_attr_elts:
                 setattr(self.parent, name, self)

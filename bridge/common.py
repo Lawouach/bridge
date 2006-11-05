@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+XML_NS = 'http://www.w3.org/XML/1998/namespace'
+XML_PREFIX = u'xml'
+
 XHTML1_NS = u'http://www.w3.org/1999/xhtml'
 XHTML1_PREFIX = u'xhtml'
 
@@ -19,3 +22,5 @@ atom_as_attr = {ATOM10_NS: ['id', 'title', 'updated', 'published', 'icon', 'logo
 
 atom_as_list = {ATOM10_NS: ['author', 'contributor', 'category', 'link', 'entry'],
                 ATOMPUB_NS: ['collection', 'workspace', 'categories']}
+
+atom_attribute_of_element = {None: ['type', 'term', 'href', 'rel']}

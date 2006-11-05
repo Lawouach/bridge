@@ -85,7 +85,9 @@ class Parser(object):
     def __attrs(self, node):
         attrs = {}
         for attr in node.xml_attributes:
-            attrns = attr.xmlns.encode(attr.encoding)
+            attrns = attr.xmlns
+            if attrns:
+                attrns = attrns.encode(attr.encoding)
             name = attr.name.encode(attr.encoding)
             attrs[(attrns, name)] = self.__qname(name, attr.prefix)
 
@@ -107,6 +109,8 @@ class Parser(object):
                 qname = self.__qname(name, prefix=prefix)
 
                 attrs = self.__attrs(child)
+                if ns:
+                    handler.startPrefixMapping(prefix, ns)
                 handler.startElementNS((ns, name), qname, attrs)
             
                 if child.xml_text:
@@ -115,15 +119,21 @@ class Parser(object):
                 self.__serialize_element(handler, child)
                 
                 handler.endElementNS((ns, name), qname)
+                if ns:
+                    handler.endPrefixMapping(prefix)
 
     def __start_root_element(self, handler, root):
         attrs = self.__attrs(root)
+        if root.xmlns:
+            handler.startPrefixMapping(root.prefix, root.xmlns)
         handler.startElementNS((root.xmlns, root.name), self.__qname(root.name, root.prefix), attrs)
         if root.xml_text:
             handler.characters(str(root.xml_text))
             
     def __end_root_element(self, handler, root):
         handler.endElementNS((root.xmlns, root.name), self.__qname(root.name, root.prefix))
+        if root.xmlns:
+            handler.endPrefixMapping(root.prefix)
 
     def serialize(self, document, indent=True, encoding=ENCODING, prefixes=None, omit_declaration=False):
         prefixes = prefixes or {}
