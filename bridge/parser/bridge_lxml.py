@@ -85,11 +85,11 @@ class Parser(object):
     def __attrs(self, node):
         attrs = {}
         for attr in node.xml_attributes:
-            attrns = attr.xmlns
+            attrns = attr.xml_ns
             if attrns:
                 attrns = attrns.encode(attr.encoding)
-            name = attr.name.encode(attr.encoding)
-            attrs[(attrns, name)] = self.__qname(name, attr.prefix)
+            name = attr.xml_name.encode(attr.encoding)
+            attrs[(attrns, name)] = self.__qname(name, attr.xml_prefix)
 
         return attrs
 
@@ -100,12 +100,12 @@ class Parser(object):
                 handler.characters(child)
             elif isinstance(child, Element):
                 prefix = ns = name = None
-                if child.prefix:
-                    prefix = child.prefix.encode(child.encoding)
-                if child.xmlns:
-                    ns = child.xmlns.encode(child.encoding)
+                if child.xml_prefix:
+                    prefix = child.xml_prefix.encode(child.encoding)
+                if child.xml_ns:
+                    ns = child.xml_ns.encode(child.encoding)
                 
-                name = child.name.encode(child.encoding)
+                name = child.xml_name.encode(child.encoding)
                 qname = self.__qname(name, prefix=prefix)
 
                 attrs = self.__attrs(child)
@@ -124,16 +124,16 @@ class Parser(object):
 
     def __start_root_element(self, handler, root):
         attrs = self.__attrs(root)
-        if root.xmlns:
-            handler.startPrefixMapping(root.prefix, root.xmlns)
-        handler.startElementNS((root.xmlns, root.name), self.__qname(root.name, root.prefix), attrs)
+        if root.xml_ns:
+            handler.startPrefixMapping(root.xml_prefix, root.xml_ns)
+        handler.startElementNS((root.xml_ns, root.xml_name), self.__qname(root.xml_name, root.xml_prefix), attrs)
         if root.xml_text:
             handler.characters(str(root.xml_text))
             
     def __end_root_element(self, handler, root):
-        handler.endElementNS((root.xmlns, root.name), self.__qname(root.name, root.prefix))
-        if root.xmlns:
-            handler.endPrefixMapping(root.prefix)
+        handler.endElementNS((root.xml_ns, root.xml_name), self.__qname(root.xml_name, root.xml_prefix))
+        if root.xml_ns:
+            handler.endPrefixMapping(root.xml_prefix)
 
     def serialize(self, document, indent=True, encoding=ENCODING, prefixes=None, omit_declaration=False):
         prefixes = prefixes or {}

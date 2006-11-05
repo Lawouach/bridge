@@ -43,17 +43,17 @@ class Parser(object):
 
     def __attrs(self, node, element):
         for attr in element.xml_attributes:
-            name = attr.name
+            name = attr.xml_name
             if attr.xmlns:
-                node.SetAttribute(name, attr.xmlns, attr.xml_text)
+                node.SetAttribute(name, attr.xml_ns, attr.xml_text)
             else:
                 node.SetAttribute(name, attr.xml_text)
 
     def __start_element(self, doc, element):
-        if element.xmlns:
-            return doc.CreateElement(element.prefix, element.name, element.xmlns)
+        if element.xml_ns:
+            return doc.CreateElement(element.xml_prefix, element.xml_name, element.xml_ns)
         else:
-            return doc.CreateElement(element.name)
+            return doc.CreateElement(element.xml_name)
 
     def __serialize_element(self, root, node, element):
         self.__attrs(node, element)
@@ -72,10 +72,10 @@ class Parser(object):
                 node.AppendChild(child_node)
                 
     def __start_document(self, root):
-        if root.xmlns:
-            return '<%s:%s xmlns:%s="%s" />' % (root.prefix, root.name,
-                                                root.prefix, root.xmlns)
-        return '<%s />' % (root.name, )
+        if root.xml_ns:
+            return '<%s:%s xmlns:%s="%s" />' % (root.xml_prefix, root.xml_name,
+                                                root.xml_prefix, root.xml_ns)
+        return '<%s />' % (root.xml_name, )
     
     def serialize(self, document, indent=False, encoding=bridge.ENCODING, prefixes=None, omit_declaration=False):
         doc = sx.XmlDocument()

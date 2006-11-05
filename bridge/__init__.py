@@ -60,19 +60,20 @@ class Attribute(object):
         if value and not isinstance(value, unicode):
             raise TypeError, "Attribute's value must be an unicode object or None"
         
-        self.parent = parent
-        self.name = name
+        self.xml_parent = parent
+        self.xml_name = name
         self.xml_text = value
-        self.prefix = prefix
-        self.xmlns = namespace
+        self.xml_prefix = prefix
+        self.xml_ns = namespace
 
-        if self.parent:
-            self.parent.xml_attributes.append(self)
+        if self.xml_parent:
+            self.xml_parent.xml_attributes.append(self)
 
             attr_of_element = self.as_attribute_of_element or {}
-            attrs = attr_of_element.get(self.xmlns, [])
-            if self.name in attrs:
-                setattr(self.parent, self.name, self.xml_text)
+            attrs = attr_of_element.get(self.xml_ns, [])
+            if self.xml_name in attrs:
+                if not hasattr(self.xml_parent, self.xml_name):
+                    setattr(self.xml_parent, self.xml_name, self.xml_text)
 
     def __unicode__(self):
         return self.xml_text
@@ -82,7 +83,7 @@ class Attribute(object):
 
     def __repr__(self):
         value = self.xml_text or ''
-        return '%s="%s" attribute at %s' % (self.name, value, hex(id(self)))
+        return '%s="%s" attribute at %s' % (self.xml_name, value, hex(id(self)))
 
 class Element(object):
     """
@@ -117,29 +118,29 @@ class Element(object):
         if content and not isinstance(content, unicode):
             raise TypeError, "Element's content must be an unicode object or None"
         
-        self.parent = parent
-        self.prefix = prefix
-        self.xmlns = namespace
-        self.name = name
+        self.xml_parent = parent
+        self.xml_prefix = prefix
+        self.xml_ns = namespace
+        self.xml_name = name
         self.xml_text = content
         self.xml_children = []
         self.xml_attributes = []
 
-        if self.parent:
-            self.parent.xml_children.append(self)
+        if self.xml_parent:
+            self.xml_parent.xml_children.append(self)
 
             as_attr_elts = self.as_attribute or {}
             as_list_elts = self.as_list or {}
             
-            as_attr_elts = as_attr_elts.get(self.xmlns, [])
-            as_list_elts = as_list_elts.get(self.xmlns, [])
+            as_attr_elts = as_attr_elts.get(self.xml_ns, [])
+            as_list_elts = as_list_elts.get(self.xml_ns, [])
 
-            if self.name in as_attr_elts:
-                setattr(self.parent, name, self)
-            elif self.name in as_list_elts:
-                if not hasattr(self.parent, name):
-                    setattr(self.parent, name, [])
-                els = getattr(self.parent, name)
+            if self.xml_name in as_attr_elts:
+                setattr(self.xml_parent, name, self)
+            elif self.xml_name in as_list_elts:
+                if not hasattr(self.xml_parent, name):
+                    setattr(self.xml_parent, name, [])
+                els = getattr(self.xml_parent, name)
                 els.append(self)
 
         if attributes and isinstance(attributes, dict):
@@ -147,13 +148,13 @@ class Element(object):
                 Attribute(name, attributes[name], parent=self)
 
     def __repr__(self):
-        prefix = self.prefix
-        xmlns = self.xmlns
+        prefix = self.xml_prefix
+        xmlns = self.xml_ns
         if (prefix not in ('', None)) and xmlns:
-            return '<%s:%s xmlns:%s="%s" element at %s />' % (prefix, self.name,
+            return '<%s:%s xmlns:%s="%s" element at %s />' % (prefix, self.xml_name,
                                                               prefix, xmlns, hex(id(self)),)
         else:
-            return "<%s element at %s />" % (self.name, hex(id(self)))
+            return "<%s element at %s />" % (self.xml_name, hex(id(self)))
 
     def __unicode__(self):
         return self.xml_text
@@ -164,35 +165,41 @@ class Element(object):
     def __iter__(self):
         return iter(self.xml_children)
 
+    def __copy__(self):
+        return Element.load(self.xml())
+
+    def clone(self):
+        return Element.load(self.xml())
+
     def __del__(self):
         """
         deletes this instance of Element. It will also removes it
         from its parent children and attributes.
         """
-        if self.parent:
-            if self in self.parent.xml_children:
-                self.parent.xml_children.remove(self)
-            if hasattr(self.parent, self.name):
-                obj = getattr(self.parent, self.name)
+        if self.xml_parent:
+            if self in self.xml_parent.xml_children:
+                self.xml_parent.xml_children.remove(self)
+            if hasattr(self.parent, self.xml_name):
+                obj = getattr(self.xml_parent, self.xml_name)
                 if isinstance(obj, list):
                     obj.remove(self)
                 elif isinstance(obj, Element):
                     del obj
 
     def get_root(self):
-        if self.parent is None:
+        if self.xml_parent is None:
             return self
-        return self.parent.get_root()
+        return self.xml_parent.get_root()
     xml_root = property(get_root, doc="Retrieve the top level element")
 
     def get_attribute(self, name):
         for attr in self.xml_attributes:
-            if attr.name == name:
+            if attr.xml_name == name:
                 return attr
             
     def get_attribute_ns(self, name, namespace):
         for attr in self.xml_attributes:
-            if (attr.name == name) and (attr.xmlns == namespace):
+            if (attr.xml_name == name) and (attr.xml_ns == namespace):
                 return attr
 
     def has_element(self, name, ns=None):
@@ -205,7 +212,7 @@ class Element(object):
         """
         obj = getattr(self, name, None)
         if obj:
-            return obj.xmlns == ns
+            return obj.xml_ns == ns
         return False
     
     def xml(self, indent=True, encoding=ENCODING, prefixes=None, omit_declaration=False):
@@ -237,16 +244,16 @@ class Element(object):
     def __update_prefixes(self, element, dst, srcns, dstns, update_attributes):
         if update_attributes:
             for attr in element.xml_attributes:
-                if attr.xmlns == srcns:
-                    attr.prefix = dst
-                    attr.xmlns = dstns
+                if attr.xml_ns == srcns:
+                    attr.xml_prefix = dst
+                    attr.xml_ns = dstns
 
-        if element.xmlns == srcns:
-            element.prefix = dst
-            if element.xmlns and not dstns:
-                element.xmlns = None
-            elif not element.xmlns:
-                element.xmlns = dstns
+        if element.xml_ns == srcns:
+            element.xml_prefix = dst
+            if element.xml_ns and not dstns:
+                element.xml_ns = None
+            elif not element.xml_ns:
+                element.xml_ns = dstns
         
         for child in element.xml_children:
             if not isinstance(child, basestring):
