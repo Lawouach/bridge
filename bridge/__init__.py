@@ -176,6 +176,16 @@ class Element(object):
         return self.parent.get_root()
     xml_root = property(get_root, doc="Retrieve the top level element")
 
+    def get_attribute(self, name):
+        for attr in self.xml_attributes:
+            if attr.name == name:
+                return attr
+            
+    def get_attribute_ns(self, name, namespace):
+        for attr in self.xml_attributes:
+            if (attr.name == name) and (attr.xmlns == namespace):
+                return attr
+
     def has_element(self, name, ns=None):
         """
         Checks if this element has 'name' attribute
