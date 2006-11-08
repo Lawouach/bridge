@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-__version__ = "0.1.0"
+__version__ = "0.1.3"
 __authors__ = ["Sylvain Hellegouarch (sh@defuze.org)"]
-__date__ = "2006/11/03"
+__date__ = "2006/11/08"
 __copyright__ = """
 Copyright (c) 2006 Sylvain Hellegouarch
 All rights reserved.
@@ -179,7 +179,7 @@ class Element(object):
         if self.xml_parent:
             if self in self.xml_parent.xml_children:
                 self.xml_parent.xml_children.remove(self)
-            if hasattr(self.parent, self.xml_name):
+            if hasattr(self.xml_parent, self.xml_name):
                 obj = getattr(self.xml_parent, self.xml_name)
                 if isinstance(obj, list):
                     obj.remove(self)
