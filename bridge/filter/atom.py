@@ -120,3 +120,11 @@ def updated_before(element, dt_pivot, strict=True, recursive=False, include_feed
     return _cmp_date(_is_before_date, 'updated', element, dt_pivot,
                      strict, recursive, include_feed)
 
+
+def lookup_entry(element, id):
+    if element.has_element(u'entry', ATOM10_NS):
+        for entry in element.entry:
+            if entry.id.xml_text == id:
+                return entry
+                
+    return None

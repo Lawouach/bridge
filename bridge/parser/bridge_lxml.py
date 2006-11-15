@@ -89,7 +89,7 @@ class Parser(object):
             if attrns:
                 attrns = attrns.encode(attr.encoding)
             name = attr.xml_name.encode(attr.encoding)
-            attrs[(attrns, name)] = self.__qname(name, attr.xml_prefix)
+            attrs[(attrns, name)] = attr.xml_text or '' # self.__qname(name, attr.xml_prefix)
 
         return attrs
 

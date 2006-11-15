@@ -185,6 +185,24 @@ class Element(object):
                     obj.remove(self)
                 elif isinstance(obj, Element):
                     del obj
+                    
+    def __delattr__(self, name):
+        """
+        deletes 'name' instance of Element. It will also removes it
+        from its parent children and attributes.
+        """
+        if not hasattr(self, name):
+            raise AttributeError, name
+        
+        attr = getattr(self, name)
+        if isinstance(attr, Element):
+            if attr in self.xml_children:
+                self.xml_children.remove(attr)
+        elif isinstance(attr, Attribute):
+            if attr in self.xml_attributes:
+                self.xml_attributes.remove(attr)
+
+        del self.__dict__[name]
 
     def get_root(self):
         if self.xml_parent is None:
