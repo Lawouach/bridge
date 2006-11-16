@@ -72,13 +72,17 @@ class Parser(object):
 
         return doc.xml(indent=indent, encoding=encoding, omitXmlDeclaration=omit_declaration)
     
-    def deserialize(self, source, prefixes=None, strict=False):
+    def deserialize(self, source, prefixes=None, strict=False, as_attribute=None, as_list=None,
+                    as_attribute_of_element=None):
         prefixes = prefixes or {}
         doc = amara.parse(source, uri=DUMMY_URI, prefixes=prefixes)
 
         root = doc.xml_children[0]
         element = Element(name=root.localName, prefix=root.prefix,
                           namespace=root.namespaceURI)
+        element.as_attribute = as_attribute
+        element.as_list = as_list
+        element.as_attribute_of_element = as_attribute_of_element
         self.__deserialize_fragment(root, element)
         
         return element

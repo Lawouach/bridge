@@ -148,7 +148,8 @@ class Parser(object):
 
         return etree.tostring(handler.etree.getroot(), pretty_print=indent, encoding=encoding)
 
-    def deserialize(self, source, prefixes=None, strict=False):
+    def deserialize(self, source, prefixes=None, strict=False, as_attribute=None, as_list=None,
+                    as_attribute_of_element=None):
         autoclose = False
         if isinstance(source, basestring):
             autoclose = True
@@ -170,6 +171,10 @@ class Parser(object):
                 
         element = Element(name=_ln(root), prefix=root.prefix,
                           namespace=_ns(root), content=content)
+        
+        element.as_attribute = as_attribute
+        element.as_list = as_list
+        element.as_attribute_of_element = as_attribute_of_element
         
         if root.text and children:
             element.xml_children.append(unicode(root.text))

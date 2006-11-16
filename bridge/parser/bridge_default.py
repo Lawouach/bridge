@@ -156,7 +156,8 @@ class Parser(object):
         s.close()
         return content
 
-    def deserialize(self, source, prefixes=None, strict=False):
+    def deserialize(self, source, prefixes=None, strict=False, as_attribute=None, as_list=None,
+                    as_attribute_of_element=None):
         doc = None
         if isinstance(source, basestring):
             if os.path.exists(source):
@@ -169,6 +170,9 @@ class Parser(object):
         root = doc.documentElement
         element = bridge.Element(name=root.localName, prefix=root.prefix,
                                  namespace=root.namespaceURI)
+        element.as_attribute = as_attribute
+        element.as_list = as_list
+        element.as_attribute_of_element = as_attribute_of_element
 
         self.__deserialize_fragment(root, element)
         

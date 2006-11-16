@@ -99,7 +99,8 @@ class Parser(object):
 
         return content
 
-    def deserialize(self, source, prefixes=None, strict=False):
+    def deserialize(self, source, prefixes=None, strict=False, as_attribute=None, as_list=None,
+                    as_attribute_of_element=None):
         doc = sx.XmlDocument()
         if isinstance(source, basestring):
             if os.path.exists(source):
@@ -113,6 +114,9 @@ class Parser(object):
         element = bridge.Element(name=root.LocalName, prefix=root.Prefix,
                                  namespace=root.NamespaceURI)
 
+        element.as_attribute = as_attribute
+        element.as_list = as_list
+        element.as_attribute_of_element = as_attribute_of_element
         self.__deserialize_fragment(root, element)
         
         return element

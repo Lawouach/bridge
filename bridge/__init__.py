@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-__version__ = "0.1.3"
+__version__ = "0.1.5"
 __authors__ = ["Sylvain Hellegouarch (sh@defuze.org)"]
-__date__ = "2006/11/08"
+__contributors__ = ['David Turner']
+__date__ = "2006/11/16"
 __copyright__ = """
 Copyright (c) 2006 Sylvain Hellegouarch
 All rights reserved.
@@ -37,6 +38,7 @@ ENCODING = 'UTF-8'
 DUMMY_URI = u'http://dummy.com'
 
 import bridge.parser.bridge_default
+from bridge.filter import fetch_child, fetch_children
 
 class Attribute(object):
     """
@@ -66,14 +68,21 @@ class Attribute(object):
         self.xml_prefix = prefix
         self.xml_ns = namespace
 
+        self.as_attribute_of_element = {}
+        if self.xml_parent.as_attribute_of_element:
+            self.as_attribute_of_element.update(self.xml_parent.as_attribute_of_element)
+        elif isinstance(Attribute.as_attribute_of_element, dict):
+            self.as_attribute_of_element.update(Attribute.as_attribute_of_element)
+            
         if self.xml_parent:
             self.xml_parent.xml_attributes.append(self)
 
-            attr_of_element = self.as_attribute_of_element or {}
-            attrs = attr_of_element.get(self.xml_ns, [])
+            attrs = self.as_attribute_of_element.get(self.xml_ns, [])
             if self.xml_name in attrs:
-                if not hasattr(self.xml_parent, self.xml_name):
-                    setattr(self.xml_parent, self.xml_name, self.xml_text)
+                name = self.xml_name.replace('-', '_')
+                name = name.replace('.', '_')
+                if not hasattr(self.xml_parent, name):
+                    setattr(self.xml_parent, name, self.xml_text)
 
     def __unicode__(self):
         return self.xml_text
@@ -113,7 +122,7 @@ class Element(object):
         then we will add a list to parent with the name of the element
         
         If 'Element.as_attribute' is set and if (name, namespace) belongs to it
-        then we will add an attribute to parent with the name of the element 
+        then we will add an attribute to parent with the name of the element
         """
         if content and not isinstance(content, unicode):
             raise TypeError, "Element's content must be an unicode object or None"
@@ -126,18 +135,33 @@ class Element(object):
         self.xml_children = []
         self.xml_attributes = []
 
+        self.as_attribute = {}
+        if self.xml_root.as_attribute:
+            self.as_attribute.update(self.xml_root.as_attribute)
+        elif isinstance(Element.as_attribute, dict):
+            self.as_attribute.update(Element.as_attribute)
+            
+        self.as_list= {}
+        if self.xml_root.as_list:
+            self.as_list.update(self.xml_root.as_list)
+        elif isinstance(Element.as_list, dict):
+            self.as_list.update(Element.as_list)
+
+        self.as_attribute_of_element = {}
+
         if self.xml_parent:
             self.xml_parent.xml_children.append(self)
 
-            as_attr_elts = self.as_attribute or {}
-            as_list_elts = self.as_list or {}
-            
-            as_attr_elts = as_attr_elts.get(self.xml_ns, [])
-            as_list_elts = as_list_elts.get(self.xml_ns, [])
+            as_attr_elts = self.as_attribute.get(self.xml_ns, [])
+            as_list_elts = self.as_list.get(self.xml_ns, [])
 
             if self.xml_name in as_attr_elts:
+                name = self.xml_name.replace('-', '_')
+                name = name.replace('.', '_')
                 setattr(self.xml_parent, name, self)
             elif self.xml_name in as_list_elts:
+                name = self.xml_name.replace('-', '_')
+                name = name.replace('.', '_')
                 if not hasattr(self.xml_parent, name):
                     setattr(self.xml_parent, name, [])
                 els = getattr(self.xml_parent, name)
@@ -232,7 +256,38 @@ class Element(object):
         if obj:
             return obj.xml_ns == ns
         return False
+
+    def has_child(self, name, ns=None):
+        """
+        Checks if this element has a child named 'name' in its children elements
+
+        Keyword arguments:
+        name -- local name of the element
+        ns -- namespace of the element
+        """
+        return self.filtrate(fetch_child, child_name=name, child_ns=ns) != None
     
+    def get_child(self, name, ns=None):
+        """
+        Returns the child element named 'name', None if not found.
+
+        Keyword arguments:
+        name -- local name of the element
+        ns -- namespace of the element
+        """
+        return self.filtrate(fetch_child, child_name=name, child_ns=ns)
+    
+    def get_children(self, name, ns=None, recursive=False):
+        """
+        Returns the all children of this element named 'name'
+        
+        Keyword arguments:
+        name -- local name of the element
+        ns -- namespace of the element
+        recursive -- if True this will iterate through the entire tree
+        """
+        return self.filtrate(fetch_children, child_name=name, child_ns=ns, recursive=recursive)
+
     def xml(self, indent=True, encoding=ENCODING, prefixes=None, omit_declaration=False):
         """
         Serializes as a string this element
@@ -247,16 +302,26 @@ class Element(object):
         return ser.serialize(self, indent=indent, encoding=encoding,
                              prefixes=prefixes, omit_declaration=omit_declaration)
 
-    def load(self, source, prefixes=None):
+    def load(self, source, prefixes=None, as_attribute=None, as_list=None,
+             as_attribute_of_element=None):
         """
         Load source into an Element instance
 
         Keyword arguments:
         source -- an XML string, a file path or a file object
         prefixes -- dictionnary of prefixes of the form {'prefix': 'ns'}
+        as_attribute -- dictionary of element names to set as attribute of their parent
+        as_list -- dictionary of element names to set into a list of their parent
+        as_attribute_of_element -- dictionary of attribute names to set as attribute of their
+        parent
+
+        If any of those last three parameters are provided they will take
+        precedence over those set on the Element and Attribute class.
+        
         """
         ser = self.parser()
-        return ser.deserialize(source, prefixes=prefixes)
+        return ser.deserialize(source, prefixes=prefixes, as_attribute=as_attribute,
+                               as_list=as_list, as_attribute_of_element=as_attribute_of_element)
     load = classmethod(load)
 
     def __update_prefixes(self, element, dst, srcns, dstns, update_attributes):
