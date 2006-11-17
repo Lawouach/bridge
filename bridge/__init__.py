@@ -69,8 +69,8 @@ class Attribute(object):
         self.xml_ns = namespace
 
         self.as_attribute_of_element = {}
-        if self.xml_parent.as_attribute_of_element:
-            self.as_attribute_of_element.update(self.xml_parent.as_attribute_of_element)
+        if self.xml_parent and self.xml_parent.xml_root.as_attribute_of_element:
+            self.as_attribute_of_element.update(self.xml_parent.xml_root.as_attribute_of_element)
         elif isinstance(Attribute.as_attribute_of_element, dict):
             self.as_attribute_of_element.update(Attribute.as_attribute_of_element)
             
@@ -287,6 +287,28 @@ class Element(object):
         recursive -- if True this will iterate through the entire tree
         """
         return self.filtrate(fetch_children, child_name=name, child_ns=ns, recursive=recursive)
+
+    def insert_before(self, before_element, element):
+        """
+        Insert 'element' right before 'before_element'.
+        This only inserts the new element in self.xml_children
+
+        Keyword arguments:
+        before_element -- element pivot
+        element -- new element to insert
+        """
+        self.xml_children.insert(self.xml_children.index(before_element), element)
+
+    def insert_after(self, after_element, element):
+        """
+        Insert 'element' right after 'after_element'.
+        This only inserts the new element in self.xml_children
+
+        Keyword arguments:
+        after_element -- element pivot
+        element -- new element to insert
+        """
+        self.xml_children.insert(self.xml_children.index(after_element) + 1, element)
 
     def xml(self, indent=True, encoding=ENCODING, prefixes=None, omit_declaration=False):
         """

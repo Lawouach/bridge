@@ -67,3 +67,13 @@ odf_meta_as_attr = {ODF_META_NS: ['document-statistic', 'creation-date',
 odf_office_as_attr = {ODF_OFFICE_NS:['meta']}
 odf_office_as_attr.update(odf_meta_as_attr)
 odf_office_as_attr.update(dc_as_attr)
+
+###########################################################
+# XHTML
+###########################################################
+XHTML10_NS = u'http://www.w3.org/1999/xhtml'
+XHTML10_PREFIX = u'xhtml'
+
+xhtml_as_attr = {XHTML10_NS: ['head', 'body']}
+xhtml_as_list = {XHTML10_NS: ['meta', 'link', 'script']}
+xhtml_attribute_of_element = {None: ['content', 'name', 'lang']}
