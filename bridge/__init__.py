@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-__version__ = "0.1.5"
+__version__ = "0.1.6"
 __authors__ = ["Sylvain Hellegouarch (sh@defuze.org)"]
 __contributors__ = ['David Turner']
-__date__ = "2006/11/16"
+__date__ = "2006/11/21"
 __copyright__ = """
 Copyright (c) 2006 Sylvain Hellegouarch
 All rights reserved.
@@ -85,11 +85,15 @@ class Attribute(object):
                     setattr(self.xml_parent, name, self.xml_text)
 
     def __unicode__(self):
-        return self.xml_text
+        if self.xml_text:
+            return self.xml_text
+        return unicode(self.xml_text)
     
     def __str__(self):
-        return self.xml_text.encode(self.encoding)
-
+        if self.xml_text:
+            return self.xml_text.encode(self.encoding)
+        return str(self.xml_text)
+    
     def __repr__(self):
         value = self.xml_text or ''
         return '%s="%s" attribute at %s' % (self.xml_name, value, hex(id(self)))
@@ -181,19 +185,23 @@ class Element(object):
             return "<%s element at %s />" % (self.xml_name, hex(id(self)))
 
     def __unicode__(self):
-        return self.xml_text
+        if self.xml_text:
+            return self.xml_text
+        return unicode(None)
     
     def __str__(self):
-        return self.xml_text.encode(self.encoding)
+        if self.xml_text:
+            return self.xml_text.encode(self.encoding)
+        return str(None)
 
     def __iter__(self):
         return iter(self.xml_children)
 
     def __copy__(self):
-        return Element.load(self.xml())
+        return Element.load(self.xml(encoding=self.encoding, omit_declaration=True))
 
     def clone(self):
-        return Element.load(self.xml())
+        return Element.load(self.xml(encoding=self.encoding, omit_declaration=True))
 
     def __del__(self):
         """
