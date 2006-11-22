@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 class BridgeValidatorException(StandardError):
-    def __init__(self, element, message=''):
+    def __init__(self, element=None, message=''):
         self.element = element
         self.message = message
 
