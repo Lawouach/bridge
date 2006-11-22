@@ -84,6 +84,14 @@ class Parser(object):
             return "%s:%s" % (prefix, name)
         return name
 
+    def __remove_from_attr(self, attrs, prefix, ns=xd.XMLNS_NAMESPACE):
+        # Namespace handling with the built-in xml packages are a bit of nightmare
+        # this method will avoid for an attribute to appear twice
+        token = (ns, prefix)
+        if token in attrs:
+            del attrs[token]
+        return attrs
+        
     def __attrs(self, node):
         attrs = {}
         for attr in node.xml_attributes:
@@ -112,6 +120,7 @@ class Parser(object):
 
                 attrs = self.__attrs(child)
                 if ns and ns != child.xml_root.xml_ns:
+                    attrs = self.__remove_from_attr(attrs, prefix)
                     handler.startPrefixMapping(prefix, ns)
                 handler.startElementNS((ns, name), qname, attrs)
             
@@ -127,6 +136,7 @@ class Parser(object):
     def __start_root_element(self, handler, root):
         attrs = self.__attrs(root)
         if root.xml_ns:
+            attrs = self.__remove_from_attr(attrs, root.xml_prefix)
             handler.startPrefixMapping(root.xml_prefix, root.xml_ns)
         handler.startElementNS((root.xml_ns, root.xml_name), self.__qname(root.xml_name, root.xml_prefix), attrs)
         if root.xml_text:
@@ -177,6 +187,9 @@ class Parser(object):
         self.__deserialize_fragment(root, element)
         
         if doc:
-            doc.unlink()
-
+            try:
+                doc.unlink()
+            except KeyError:
+                pass
+            
         return element
