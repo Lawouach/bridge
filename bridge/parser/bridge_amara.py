@@ -58,9 +58,10 @@ class Parser(object):
             
     def __serialize_root_element(self, root):
         if root.xml_ns:
-            return '<%s:%s xmlns:%s="%s" />' % (root.xml_prefix, root.xml_name,
-                                                root.xml_prefix, root.xml_ns)
-        return '<%s />' % (root.xml_name, )
+            return '<%s:%s xmlns:%s="%s">%s</%s:%s>' % (root.xml_prefix, root.xml_name,
+                                                        root.xml_prefix, root.xml_ns,
+                                                        root.xml_text or '', root.xml_prefix, root.xml_name)
+        return '<%s>%s</%s>' % (root.xml_name, root.xml_text or '', root.xml_name)
 
     def serialize(self, document, indent=True, encoding=ENCODING, prefixes=None, omit_declaration=False):
         prefixes = prefixes or {}
