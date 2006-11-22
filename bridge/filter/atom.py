@@ -10,8 +10,13 @@ import datetime
 from bridge.lib import isodate
 
 __all__ = ['published_after', 'updated_after',
-           'published_before', 'updated_before']
+           'published_before', 'updated_before',
+           'requires_summary', 'lookup_links',
+           'lookup_entry','requires_author', 'valid_categories']
 
+_xml_media_types = ['text/xml', 'application/xml', 'text/xml-external-parsed-entity',
+                    'application/xml-external-parsed-entity', 'application/xml-dtd']
+    
 def _is_before_date(node, dt_pivot, strict=True):
     dt = isodate.parse(str(node))
     dt = datetime.datetime.utcfromtimestamp(dt)
@@ -122,9 +127,140 @@ def updated_before(element, dt_pivot, strict=True, recursive=False, include_feed
 
 
 def lookup_entry(element, id):
-    if element.has_element(u'entry', ATOM10_NS):
-        for entry in element.entry:
-            if entry.id.xml_text == id:
+    """
+    Returns the first entry matching the id provided in parameter
+    """
+    if element.has_child(u'entry', ATOM10_NS):
+        entries = element.get_children(u'entry', ATOM10_NS)
+        for entry in entries:
+            entry_id = entry.get_child('id', ATOM10_NS)
+            if entry_id.xml_text == id:
                 return entry
                 
     return None
+
+def lookup_links(element, **kwargs):
+    """
+    returns a list of links matching the attributes passed as parameters.
+    For instance:
+
+    lookup_links(entry, rel=u'alternate', type=u'text/html')
+    """
+    results = []
+    if element.has_child(u'link', ATOM10_NS):
+        links = element.get_children(u'link', ATOM10_NS)
+        for link in links:
+            candidate = False
+            for arg in kwargs:
+                attr = link.get_attribute(arg)
+                if attr:
+                    value = kwargs.get(arg)
+                    if value == attr.xml_text:
+                        candidate = True
+                    else:
+                        candidate = False
+                        break
+                else:
+                    candidate = False
+                    break
+
+            if candidate:
+                results.append(link)
+                
+    return results
+
+def requires_summary(element):
+    """
+    Returns True if the entry requires an atom:summary
+    to be added based on section 4.1.2 of RFC 4287.
+
+    Keyword argument:
+    element -- entry element
+    """
+    # atom:entry elements MUST contain an atom:summary element in either of the following cases:
+    #   * the atom:entry contains an atom:content that has a "src" attribute (and is thus empty).
+    #   * the atom:entry contains content that is encoded in Base64; i.e.,
+    #     the "type" attribute of atom:content is a MIME media type [MIMEREG],
+    #     but is not an XML media type [RFC3023], does not begin with "text/",
+    #     and does not end with "/xml" or "+xml".
+    needs_summary = False
+    content = element.get_child('element', ATOM10_NS)
+    if content:
+        src = content.get_attribute_ns('src', ATOM10_NS)
+        mime_type = content.get_attribute_ns('type', ATOM10_NS)
+        if src:
+            needs_summary = True
+        elif mime_type:
+            mime_type = mime_type.xml_text
+            if mime_type not in _xml_media_types:
+                needs_summary = True
+            if mime_type.startswith("text/"):
+                needs_summary = False
+            if mime_type.endswith("/xml") or mime_type.endswith("+xml"):
+                needs_summary = False
+    else:
+        needs_summary = True
+    return needs_summary
+
+def requires_author(element):
+    """
+    Returns True if the entry requires an atom:author
+    to be added based on section 4.1.2 of RFC 4287.
+
+    Keyword argument:
+    element -- entry element
+    """
+    # atom:entry elements MUST contain one or more atom:author elements,
+    # unless the atom:entry contains an atom:source element
+    # that contains an atom:author element or, in an Atom Feed Document,
+    # the atom:feed element contains an atom:author element itself.
+    needs_author = False
+    author = element.get_child('author', ATOM10_NS)
+    if not author:
+        needs_author = True
+        source = element.get_child('source', ATOM10_NS)
+        if source:
+            author = source.get_child('author', ATOM10_NS)
+            if author:
+                needs_author = False
+        if element.xml_parent and element.xml_parent.xml_name == 'feed' and \
+           element.xml_parent.xml_prefix == element.xml_prefix and \
+           element.xml_parent.xml_ns == ATOM10_NS:
+            author = element.xml_parent.get_child('author', ATOM10_NS)
+            if author:
+               needs_author = False
+    return needs_author
+
+def valid_categories(element, test_set, matching=None):
+
+    # The app:categories element can contain a "fixed" attribute, with a
+    # value of either "yes" or "no", indicating whether the list of
+    # categories is a fixed or an open set.  Newly created or updated
+    # members whose categories are not listed in the Collection Document
+    # MAY be rejected by the server.  Collections that indicate the set is
+    # open SHOULD NOT reject otherwise acceptable members whose categories
+    # are not listed in the Collection.
+    
+    categories = element.get_children('category', ATOM10_NS)
+    if not matching:
+        matching = ['term']
+    for candidate in test_set:
+        valid = False
+        for current in categories:
+            for token in matching:
+                current_attr = current.get_attribute(token)
+                if current_attr:
+                    candidate_attr = candidate.get_attribute(token)
+                    if current_attr.xml_text == candidate_attr.xml_text:
+                        valid = True
+                    else:
+                        valid = False
+                        break
+                else:
+                    valid = False
+                        break
+                
+            if valid:
+                return True
+
+    return valid
