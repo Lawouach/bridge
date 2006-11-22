@@ -258,7 +258,7 @@ def valid_categories(element, test_set, matching=None):
                         break
                 else:
                     valid = False
-                        break
+                    break
                 
             if valid:
                 return True
