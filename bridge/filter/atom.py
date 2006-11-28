@@ -259,7 +259,6 @@ def valid_categories(element, test_set, matching=None):
                 else:
                     valid = False
                     break
-                
             if valid:
                 return True
 

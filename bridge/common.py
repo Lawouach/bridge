@@ -20,7 +20,7 @@ THR_NS = u'http://purl.org/syndication/thread/1.0'
 
 atom_as_attr = {ATOM10_NS: ['id', 'title', 'updated', 'published', 'icon', 'logo', 'generator',
                             'rights', 'subtitle', 'content', 'summary', 'name', 'uri', 'email'],
-                ATOMPUB_NS: ['edited'],
+                ATOMPUB_NS: ['edited', 'accept'],
                 THR_NS: ['in-reply-to', 'total']}
 
 atom_as_list = {ATOM10_NS: ['author', 'contributor', 'category', 'link', 'entry'],
