@@ -3,23 +3,26 @@
 
 import os.path
 import re
+
+__all__ = ['Parser']
+
 try:
-    from cStringIO import StringIO as StringIO
+    from cStringIO import StringIO
 except ImportError:
     from StringIO import StringIO
 
 from lxml import etree
-from lxml import objectify
-import lxml.sax
-from lxml.objectify import fromstring, StringElement, ObjectifiedElement
+from lxml import sax
 
-_parser = etree.XMLParser()
-_lookup = objectify.ObjectifyElementClassLookup()
-_parser.setElementClassLookup(_lookup)
-_lookup = etree.ElementNamespaceClassLookup(objectify.ObjectifyElementClassLookup())
-_parser.setElementClassLookup(_lookup)
+from lxml.etree import ElementTree as ETTX
+from lxml.etree import Element as ETX
+from lxml.etree import Comment as CX
+from lxml.etree import ProcessingInstruction as PIX
+from lxml.etree import SubElement as SETX
+from lxml.etree import QName as QX
+import xml.dom as xd
 
-from bridge import Attribute, Element
+from bridge import Attribute, Element, PI, Comment, Document
 from bridge import ENCODING, DUMMY_URI, __version__
 
 _qcrx = re.compile('{(.*)}(.*)')
@@ -38,7 +41,7 @@ def _split_qcname(qcname):
 def _get_prefix(elt, ns):
     for _ in elt.nsmap:
         if elt.nsmap[_] == ns:
-            return unicode(_)
+            return _
     return None
 
 def _ns(elt):
@@ -47,106 +50,126 @@ def _ns(elt):
     return None
 
 class Parser(object):
-    def __deserialize_fragment(self, current, parent):
-        for child in current.iterchildren():
-            content = value = tail = None
-            if type(child) != ObjectifiedElement:
-                content = child.text
-                if content:
-                    content = unicode(content)
+    def __set_attrs(self, current, parent, encoding):
+        for attr_key in current.attrib:
+            ns, local_name = _split_qcname(attr_key)
+            prefix = _get_prefix(current, ns)
+            value = current.attrib[attr_key].decode(encoding)
+            Attribute(name=local_name, value=value,
+                      prefix=prefix, namespace=ns, parent=parent)
+        
+    def __deserialize_fragment(self, current, parent, encoding):
+        self.__set_attrs(current, parent, encoding)
+        children = current.getchildren()
+        
+        content = current.text
+        if children and content:
+            parent.xml_children.append(content)
+        elif content:
+            parent.xml_text = content
+                           
+        for child in children:
+            if isinstance(child, etree._Comment):
+                Comment(data=child.text, parent=parent)
+                if child.tail:
+                    parent.xml_children.append(child.tail)
+            elif isinstance(child, etree._ProcessingInstruction):
+                PI(target=child.target, data=child.text, parent=parent)
+                if child.tail:
+                    parent.xml_children.append(child.tail)
+            else:
+                uri, ln = _split_qcname(child.tag)
+                prefix = _get_prefix(child, uri)
+                element = Element(name=ln, prefix=prefix,
+                                  namespace=uri, parent=parent)
 
-            element = Element(name=_ln(child), content=content,
-                              prefix=child.prefix, namespace=_ns(child),
-                              parent=parent)
-            
-            for attr_key in child.attrib:
-                ns, local_name = _split_qcname(attr_key)
-                prefix = _get_prefix(child, ns)
-                value = unicode(child.attrib[attr_key])
-                Attribute(name=local_name, value=value,
-                          prefix=prefix, namespace=ns, parent=element)
-                
-            if type(child) == ObjectifiedElement:
-                children = child.getchildren()
-                content = child.text
-                if content:
-                    element.xml_children.append(unicode(content))
-                self.__deserialize_fragment(child, element)
-                if children:
-                    tail = children[-1].tail
-                    if tail:
-                        element.xml_children.append(unicode(tail))
+                self.__deserialize_fragment(child, element, encoding)
+                tail = child.tail
+                if tail:
+                    parent.xml_children.append(tail)
 
-    def __qname(self, name, prefix=None):
-        if prefix:
-            return "%s:%s" % (prefix, name)
-        return name
-
+    def __qname(self, element):
+        if element.xml_ns:
+            return "{%s}%s" % (element.xml_ns, element.xml_name)
+        return element.xml_name
+    
     def __attrs(self, node):
         attrs = {}
         for attr in node.xml_attributes:
             attrns = attr.xml_ns
-            if attrns:
+            if attrns is not None:
                 attrns = attrns.encode(attr.encoding)
-            name = attr.xml_name.encode(attr.encoding)
-            attrs[(attrns, name)] = attr.xml_text or '' # self.__qname(name, attr.xml_prefix)
-
+            name = attr.xml_name
+            if name is not None:
+                name = attr.xml_name.encode(attr.encoding)
+            if attrns:
+                attrs["{%s}%s" % (attrns, name)] = attr.xml_text or ''
+            else:
+                attrs[name] = attr.xml_text or ''
+                
         return attrs
 
-    def __serialize_element(self, handler, element):
-        children = element.xml_children
-        for child in children:
-            if isinstance(child, basestring):
-                handler.characters(child)
-            elif isinstance(child, Element):
-                prefix = ns = name = None
-                if child.xml_prefix:
-                    prefix = child.xml_prefix.encode(child.encoding)
-                if child.xml_ns:
-                    ns = child.xml_ns.encode(child.encoding)
-                
-                name = child.xml_name.encode(child.encoding)
-                qname = self.__qname(name, prefix=prefix)
-
+    def __serialize_element(self, current, parent, encoding):
+        previous_sibling = None
+        for child in current.xml_children:
+            if isinstance(child, Comment):
+                element = CX(child.data)
+                parent.append(element)
+                previous_sibling = element
+            elif isinstance(child, PI):
+                element = PIX(child.target, child.data)
+                parent.append(element)
+                previous_sibling = element
+            elif isinstance(child, basestring):
+                if previous_sibling is not None:
+                    previous_sibling.tail = child
+                else:
+                    parent.text = child
+                previous_sibling = None
+            elif isinstance(child, Element):                
+                qname = self.__qname(child)
                 attrs = self.__attrs(child)
-                if ns:
-                    handler.startPrefixMapping(prefix, ns)
-                handler.startElementNS((ns, name), qname, attrs)
-            
+                nsmap = {}
+                if child.xml_ns:
+                    nsmap[child.xml_prefix] = child.xml_ns
+                for attr in child.xml_attributes:
+                    if attr.xml_prefix:
+                        nsmap[attr.xml_name] = attr.xml_text
+                element = SETX(parent, qname, attrib=attrs, nsmap=nsmap)
+
+                print encoding
                 if child.xml_text:
-                    handler.characters(str(child))
-                    
-                self.__serialize_element(handler, child)
+                    element.text = child.xml_text
+                previous_sibling = element
                 
-                handler.endElementNS((ns, name), qname)
-                if ns:
-                    handler.endPrefixMapping(prefix)
-
-    def __start_root_element(self, handler, root):
-        attrs = self.__attrs(root)
-        if root.xml_ns:
-            handler.startPrefixMapping(root.xml_prefix, root.xml_ns)
-        handler.startElementNS((root.xml_ns, root.xml_name), self.__qname(root.xml_name, root.xml_prefix), attrs)
-        if root.xml_text:
-            handler.characters(str(root.xml_text))
-            
-    def __end_root_element(self, handler, root):
-        handler.endElementNS((root.xml_ns, root.xml_name), self.__qname(root.xml_name, root.xml_prefix))
-        if root.xml_ns:
-            handler.endPrefixMapping(root.xml_prefix)
-
+                self.__serialize_element(child, element, encoding)
+                
     def serialize(self, document, indent=True, encoding=ENCODING, prefixes=None, omit_declaration=False):
         prefixes = prefixes or {}
-        handler = lxml.sax.ElementTreeContentHandler()
-        if not omit_declaration:
-            handler.startDocument()
-        self.__start_root_element(handler, document)
-        self.__serialize_element(handler, document)
-        self.__end_root_element(handler, document)
-        if not omit_declaration:
-            handler.endDocument()
+        if not encoding:
+            encoding = ENCODING
+        prefixes = prefixes or {}
+        root = document.xml_root
+        
+        qname = self.__qname(root)
+        attrs = self.__attrs(root)
 
-        return etree.tostring(handler.etree.getroot(), pretty_print=indent, encoding=encoding)
+        nsmap = {}
+        if root.xml_ns:
+            nsmap[root.xml_prefix] = root.xml_ns
+        for attr in root.xml_attributes:
+            if attr.xml_prefix is not None:
+                nsmap[attr.xml_prefix] = attr.xml_ns
+        element = ETX(qname, attrib=attrs, nsmap=nsmap)
+            
+        if root.xml_text:
+            element.text = root.xml_text
+
+        doc = ETTX(element)
+        self.__serialize_element(root, element, encoding)
+        
+        return etree.tostring(doc, xml_declaration=not omit_declaration,
+                              pretty_print=indent, encoding=encoding)
 
     def deserialize(self, source, prefixes=None, strict=False, as_attribute=None, as_list=None,
                     as_attribute_of_element=None):
@@ -158,33 +181,25 @@ class Parser(object):
             else:
                 source = StringIO(source)
 
-        doc = etree.parse(source, _parser)
+        parser = etree.XMLParser(ns_clean=True, no_network=True)
+        parser.setElementClassLookup(etree.ElementNamespaceClassLookup())
+
+        doc = etree.parse(source, parser)
         
         if autoclose:
             source.close()
 
+        document = Document()
+        document.as_attribute = as_attribute
+        document.as_list = as_list
+        document.as_attribute_of_element = as_attribute_of_element
+
         root = doc.getroot()
-        content = None
-        children = root.getchildren()
-        if root.text and not children:
-            content = unicode(root.text)
-                
-        element = Element(name=_ln(root), prefix=root.prefix,
-                          namespace=_ns(root), content=content)
+        uri, ln = _split_qcname(root.tag)
+        prefix = _get_prefix(root, uri)
+        element = Element(name=ln, prefix=prefix,
+                          namespace=uri, parent=document)
+        self.__deserialize_fragment(root, element, encoding=ENCODING)
         
-        element.as_attribute = as_attribute
-        element.as_list = as_list
-        element.as_attribute_of_element = as_attribute_of_element
-        
-        if root.text and children:
-            element.xml_children.append(unicode(root.text))
-            
-        self.__deserialize_fragment(root, element)
-        
-        if children:
-            tail = children[-1].tail
-            if tail:
-                element.xml_children.append(unicode(tail))
-            
-        return element
+        return document
 

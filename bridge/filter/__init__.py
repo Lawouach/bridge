@@ -1,6 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+__all__ = ['remove_duplicate_namespaces_declaration',
+           'remove_useless_namespaces_decalaration',
+           'fetch_child', 'fetch_children', 'element_children']
+
+import bridge
+from bridge.common import XMLNS_NS
+
 def fetch_child(element, child_name, child_ns):
     """
     Returns the first child named 'child_name' with the namespace 'child_ns'
@@ -48,3 +55,60 @@ def fetch_children(element, child_name, child_ns, recursive=False):
                 children.extend(sub_children)
             
     return children
+
+def remove_useless_namespaces_decalaration(element):
+    """
+    Will recursuvely go through all the elements of a fragment
+    and remove duplicate XML namespace declaration
+
+    Keyword arguments:
+    element -- root element to start from
+    """
+    attrs = element.xml_attributes[:]
+    for attr in attrs:
+        if (attr.xml_name == element.xml_prefix) and \
+           (attr.xml_text == element.xml_ns):
+            continue
+        if attr.xml_ns == XMLNS_NS:
+            element.xml_attributes.remove(attr)
+    attrs = None
+    for child in element_children(element):
+        remove_useless_namespaces_decalaration(child)
+
+def remove_duplicate_namespaces_declaration(element, visited_ns=None):
+    """
+    Will recursuvely go through all the elements of a fragment
+    and remove duplicate XML namespace declaration
+
+    Keyword arguments:
+    element -- root element to start from
+    visited_ns -- list of already visited namespace
+    """
+    if visited_ns is None:
+        visited_ns = []
+    _visited_ns = visited_ns[:]
+    attrs = element.xml_attributes[:]
+    for attr in attrs:
+        if attr.xml_ns == XMLNS_NS:
+            if attr.xml_text in visited_ns:
+                element.xml_attributes.remove(attr)
+            else:
+                _visited_ns.append(attr.xml_text)
+    attrs = None
+    for child in element_children(element):
+        remove_duplicate_namespaces_declaration(child, _visited_ns)
+    _visited_ns = None
+
+
+###################################################################
+# For generator consumers
+###################################################################
+
+def element_children(element):
+    """
+    yields every direct bridge.Element child of 'element'
+    """
+    for child in element.xml_children:
+        if isinstance(child, bridge.Element):
+            yield child
+    

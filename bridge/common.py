@@ -1,8 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-XML_NS = 'http://www.w3.org/XML/1998/namespace'
+XML_NS = u'http://www.w3.org/XML/1998/namespace'
 XML_PREFIX = u'xml'
+
+XMLNS_NS = u'http://www.w3.org/2000/xmlns/'
+XMLNS_PREFIX = u'xmlns'
 
 XHTML1_NS = u'http://www.w3.org/1999/xhtml'
 XHTML1_PREFIX = u'xhtml'

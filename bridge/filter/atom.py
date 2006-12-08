@@ -263,3 +263,26 @@ def valid_categories(element, test_set, matching=None):
                 return True
 
     return valid
+
+
+def fetch_empty_authors(element, matching=None):
+    """
+    Return a list of atom:author elements which have an empty text for the
+    children specified in 'matching' (which if not provided defaults to "name")
+
+    fetch_empty_authors(entry, matching=['name', 'email'])
+    """
+    if not matching:
+        matching = ['name', 'email', 'uri']
+    result = []
+    authors = element.get_children('author', ATOM10_NS)
+    for author in authors:
+        for token in matching:
+            if not author.has_child(token, ATOM10_NS):
+                result.append(author)
+            else:
+                child = author.get_child(token, ATOM10_NS)
+                if not child.xml_text:
+                    result.append(author)
+
+    return result

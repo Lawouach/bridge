@@ -8,12 +8,18 @@
 import os.path
 import bridge
 
+__all__ = ['Parser']
+
 import clr
 clr.AddReference('System.Xml')
 import System.Xml as sx
 from System import Array, Byte
 from System.IO import MemoryStream, StreamReader, SeekOrigin
 from System.Text import Encoding
+
+from bridge.common import XMLNS_NS
+from bridge.filter import remove_duplicate_namespaces_declaration as rdnd
+from bridge.filter import remove_useless_namespaces_decalaration as rund
 
 class Parser(object):
     def __deserialize_fragment(self, current, parent):
@@ -44,7 +50,7 @@ class Parser(object):
     def __attrs(self, node, element):
         for attr in element.xml_attributes:
             name = attr.xml_name
-            if attr.xmlns:
+            if attr.xml_ns:
                 node.SetAttribute(name, attr.xml_ns, attr.xml_text)
             else:
                 node.SetAttribute(name, attr.xml_text)
@@ -119,4 +125,6 @@ class Parser(object):
         element.as_attribute_of_element = as_attribute_of_element
         self.__deserialize_fragment(root, element)
         
+        element.filtrate(rund)
+        element.filtrate(rdnd)
         return element

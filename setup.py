@@ -10,14 +10,14 @@ for scheme in INSTALL_SCHEMES.values():
     scheme['data'] = scheme['purelib']
         
 setup(name = "bridge",
-      version = '0.1.6',
-      description = "General purpose XML library based on other XML engines (Amara, xml.dom, lxml, System.Xml)",
+      version = '0.2.0',
+      description = "General purpose XML library based on other XML engines (Amara, xml.dom, lxml, ElementTree, System.Xml)",
       maintainer = "Sylvain Hellegouarch",
       maintainer_email = "sh@defuze.org",
       url = "http://trac.defuze.org/wiki/bridge",
       download_url = "http://www.defuze.org/oss/bridge/",
       packages = ["bridge", "bridge.parser", "bridge.lib",
-                  "bridge.filter", "bridge.validator"],
+                  "bridge.filter", "bridge.validator", "bridge.test"],
       platforms = ["any"],
       license = 'BSD',
       long_description = "",

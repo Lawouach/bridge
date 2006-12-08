@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-__version__ = "0.1.6"
+__version__ = "0.2.0"
 __authors__ = ["Sylvain Hellegouarch (sh@defuze.org)"]
 __contributors__ = ['David Turner']
-__date__ = "2006/11/21"
+__date__ = "2006/12/08"
 __copyright__ = """
 Copyright (c) 2006 Sylvain Hellegouarch
 All rights reserved.
@@ -40,6 +40,27 @@ DUMMY_URI = u'http://dummy.com'
 import bridge.parser.bridge_default
 from bridge.filter import fetch_child, fetch_children
 
+from bridge.common import  XML_NS, XMLNS_NS 
+
+__all__ = ['Attribute', 'Element', 'PI', 'Comment', 'Document']
+
+class PI(object):
+    def __init__(self, target, data, parent=None):
+        self.target = target
+        self.data = data
+        self.xml_parent = parent
+    
+        if self.xml_parent:
+            self.xml_parent.xml_children.append(self)
+
+class Comment(object):
+    def __init__(self, data, parent=None):
+        self.data = data
+        self.xml_parent = parent
+
+        if self.xml_parent:
+            self.xml_parent.xml_children.append(self)
+          
 class Attribute(object):
     """
     Maps the attribute of an XML element to a simple Python object.
@@ -97,7 +118,7 @@ class Attribute(object):
     def __repr__(self):
         value = self.xml_text or ''
         return '%s="%s" attribute at %s' % (self.xml_name, value, hex(id(self)))
-
+  
 class Element(object):
     """
     Maps an XML element to a Python object.
@@ -130,7 +151,8 @@ class Element(object):
         """
         if content and not isinstance(content, unicode):
             raise TypeError, "Element's content must be an unicode object or None"
-        
+
+        self._root = None
         self.xml_parent = parent
         self.xml_prefix = prefix
         self.xml_ns = namespace
@@ -139,6 +161,9 @@ class Element(object):
         self.xml_children = []
         self.xml_attributes = []
 
+        if self.xml_root is None:
+            return
+        
         self.as_attribute = {}
         if self.xml_root.as_attribute:
             self.as_attribute.update(self.xml_root.as_attribute)
@@ -202,22 +227,7 @@ class Element(object):
 
     def clone(self):
         return Element.load(self.xml(encoding=self.encoding, omit_declaration=True))
-
-    def __del__(self):
-        """
-        deletes this instance of Element. It will also removes it
-        from its parent children and attributes.
-        """
-        if self.xml_parent:
-            if self in self.xml_parent.xml_children:
-                self.xml_parent.xml_children.remove(self)
-            if hasattr(self.xml_parent, self.xml_name):
-                obj = getattr(self.xml_parent, self.xml_name)
-                if isinstance(obj, list):
-                    obj.remove(self)
-                elif isinstance(obj, Element):
-                    del obj
-                    
+        
     def __delattr__(self, name):
         """
         deletes 'name' instance of Element. It will also removes it
@@ -237,6 +247,12 @@ class Element(object):
         del self.__dict__[name]
 
     def get_root(self):
+        if self._root is not None:
+            return self._root
+
+        if isinstance(self.xml_parent, Document):
+            return self
+        
         if self.xml_parent is None:
             return self
         return self.xml_parent.get_root()
@@ -296,6 +312,21 @@ class Element(object):
         """
         return self.filtrate(fetch_children, child_name=name, child_ns=ns, recursive=recursive)
 
+    def forget(self):
+        """
+        deletes this instance of Element. It will also removes it
+        from its parent children and attributes.
+        """
+        if self.xml_parent:
+            if self in self.xml_parent.xml_children:
+                self.xml_parent.xml_children.remove(self)
+            if hasattr(self.xml_parent, self.xml_name):
+                obj = getattr(self.xml_parent, self.xml_name)
+                if isinstance(obj, list):
+                    obj.remove(self)
+                elif isinstance(obj, Element):
+                    del obj
+            
     def insert_before(self, before_element, element):
         """
         Insert 'element' right before 'before_element'.
@@ -360,6 +391,8 @@ class Element(object):
                 if attr.xml_ns == srcns:
                     attr.xml_prefix = dst
                     attr.xml_ns = dstns
+                elif attr.xml_ns == XMLNS_NS:
+                    attr.xml_name = dst
 
         if element.xml_ns == srcns:
             element.xml_prefix = dst
@@ -399,3 +432,20 @@ class Element(object):
         Applies a validator on this element
         """
         validator(self, **kwargs)
+
+
+class Document(Element):
+    def __init__(self):
+        Element.__init__(self)
+        
+    def get_root(self):
+        if self._root is None:
+            for child in self.xml_children:
+                if isinstance(child, Element):
+                    self._root = child
+                    break
+        return self._root
+    xml_root = property(get_root)
+
+    def __repr__(self):
+        return "document at %s" % hex(id(self))
