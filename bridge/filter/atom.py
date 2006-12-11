@@ -1,10 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-ATOM10_NS = u'http://www.w3.org/2005/Atom'
-ATOMPUB_NS = u'http://purl.org/atom/app#'
-XHTML1_NS = u'http://www.w3.org/1999/xhtml'
-THR_NS = u'http://purl.org/syndication/thread/1.0'
+from bridge.commin import ATOM10_NS, ATOMPUB_NS, THR_NS, XHTML1_NS
 
 import datetime
 from bridge.lib import isodate
