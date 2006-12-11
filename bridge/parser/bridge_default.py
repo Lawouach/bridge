@@ -205,9 +205,9 @@ class Parser(object):
             doc = xdm.parse(source)
 
         document = bridge.Document()
-        document.as_attribute = as_attribute
-        document.as_list = as_list
-        document.as_attribute_of_element = as_attribute_of_element
+        document.as_attribute = as_attribute or {}
+        document.as_list = as_list or {}
+        document.as_attribute_of_element = as_attribute_of_element or {}
 
         self.__deserialize_fragment(doc, document)
         

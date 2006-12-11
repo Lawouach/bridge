@@ -237,9 +237,9 @@ class Parser(object):
                 source = StringIO(source)
 
         document = Document()
-        document.as_attribute = as_attribute
-        document.as_list = as_list
-        document.as_attribute_of_element = as_attribute_of_element
+        document.as_attribute = as_attribute or {}
+        document.as_list = as_list or {}
+        document.as_attribute_of_element = as_attribute_of_element or {}
         doc = ET.parse(source, parser=BridgeTreeBuilder(document))
         
         if autoclose:

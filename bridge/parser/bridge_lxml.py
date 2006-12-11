@@ -190,12 +190,13 @@ class Parser(object):
             source.close()
 
         document = Document()
-        document.as_attribute = as_attribute
-        document.as_list = as_list
-        document.as_attribute_of_element = as_attribute_of_element
+        document.as_attribute = as_attribute or {}
+        document.as_list = as_list or {}
+        document.as_attribute_of_element = as_attribute_of_element or {}
 
         root = doc.getroot()
         uri, ln = _split_qcname(root.tag)
+
         prefix = _get_prefix(root, uri)
         element = Element(name=ln, prefix=prefix,
                           namespace=uri, parent=document)

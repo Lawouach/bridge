@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-__version__ = "0.2.0"
+__version__ = "0.2.1"
 __authors__ = ["Sylvain Hellegouarch (sh@defuze.org)"]
 __contributors__ = ['David Turner']
-__date__ = "2006/12/08"
+__date__ = "2006/12/11"
 __copyright__ = """
 Copyright (c) 2006 Sylvain Hellegouarch
 All rights reserved.
@@ -152,6 +152,10 @@ class Element(object):
         if content and not isinstance(content, unicode):
             raise TypeError, "Element's content must be an unicode object or None"
 
+        self.as_attribute = {}
+        self.as_list= {}
+        self.as_attribute_of_element = {}
+
         self._root = None
         self.xml_parent = parent
         self.xml_prefix = prefix
@@ -161,22 +165,15 @@ class Element(object):
         self.xml_children = []
         self.xml_attributes = []
 
-        if self.xml_root is None:
-            return
-        
-        self.as_attribute = {}
-        if self.xml_root.as_attribute:
+        if self.xml_root and self.xml_root.as_attribute:
             self.as_attribute.update(self.xml_root.as_attribute)
         elif isinstance(Element.as_attribute, dict):
             self.as_attribute.update(Element.as_attribute)
-            
-        self.as_list= {}
-        if self.xml_root.as_list:
+
+        if self.xml_root and self.xml_root.as_list:
             self.as_list.update(self.xml_root.as_list)
         elif isinstance(Element.as_list, dict):
             self.as_list.update(Element.as_list)
-
-        self.as_attribute_of_element = {}
 
         if self.xml_parent:
             self.xml_parent.xml_children.append(self)
@@ -251,9 +248,14 @@ class Element(object):
             return self._root
 
         if isinstance(self.xml_parent, Document):
+            self._root = self
+            self.as_attribute.update(self.xml_parent.as_attribute)
+            self.as_list.update(self.xml_parent.as_list)
+            self.as_attribute_of_element.update(self.xml_parent.as_attribute_of_element)
             return self
         
         if self.xml_parent is None:
+            self._root = self
             return self
         return self.xml_parent.get_root()
     xml_root = property(get_root, doc="Retrieve the top level element")

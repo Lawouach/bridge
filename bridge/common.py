@@ -77,6 +77,6 @@ odf_office_as_attr.update(dc_as_attr)
 XHTML10_NS = u'http://www.w3.org/1999/xhtml'
 XHTML10_PREFIX = u'xhtml'
 
-xhtml_as_attr = {XHTML10_NS: ['head', 'body']}
+xhtml_as_attr = {XHTML10_NS: ['html', 'head', 'body', 'title']}
 xhtml_as_list = {XHTML10_NS: ['meta', 'link', 'script']}
 xhtml_attribute_of_element = {None: ['content', 'name', 'lang']}

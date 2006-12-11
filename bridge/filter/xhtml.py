@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from bridge.commin import XHTML1_NS, XHTML1_PREFIX
+from bridge.common import XHTML1_NS, XHTML1_PREFIX
 
 import datetime
 from bridge.lib import isodate
@@ -19,8 +19,8 @@ def extract_meta(element):
     metas = element.get_children('meta', XHTML1_NS)
     result = {}
     for meta in metas:
-        name = meta.get_attribute('name')
-        content = meta.get_attribute('content')
+        name = meta.get_attribute('name').xml_text
+        content = meta.get_attribute('content').xml_text
         result[name] = content
 
     return result

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from bridge.commin import ATOM10_NS, ATOMPUB_NS, THR_NS, XHTML1_NS
+from bridge.common import ATOM10_NS, ATOMPUB_NS, THR_NS, XHTML1_NS
 
 import datetime
 from bridge.lib import isodate

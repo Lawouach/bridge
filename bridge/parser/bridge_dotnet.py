@@ -120,9 +120,9 @@ class Parser(object):
         element = bridge.Element(name=root.LocalName, prefix=root.Prefix,
                                  namespace=root.NamespaceURI)
 
-        element.as_attribute = as_attribute
-        element.as_list = as_list
-        element.as_attribute_of_element = as_attribute_of_element
+        element.as_attribute = as_attribute or {}
+        element.as_list = as_list or {}
+        element.as_attribute_of_element = as_attribute_of_element or {}
         self.__deserialize_fragment(root, element)
         
         element.filtrate(rund)
