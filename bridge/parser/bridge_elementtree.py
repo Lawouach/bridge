@@ -8,10 +8,13 @@ __all__ = ['Parser']
 
 from StringIO import StringIO
 
+# Sadly we can't count on Python 2.5 because it doesn't have the complete
+# ElementTree package (it misses SimpleXMLWriter) *sigh*
 import elementtree.ElementTree as ET
 from elementtree.ElementTree import XMLTreeBuilder
 from elementtree.SimpleXMLWriter import XMLWriter, escape_cdata
 from elementtree.ElementTree import _ElementInterface
+
 import xml.dom as xd
 
 from bridge import Document, Attribute, Comment, PI, Element
