@@ -80,3 +80,56 @@ XHTML10_PREFIX = u'xhtml'
 xhtml_as_attr = {XHTML10_NS: ['html', 'head', 'body', 'title']}
 xhtml_as_list = {XHTML10_NS: ['meta', 'link', 'script']}
 xhtml_attribute_of_element = {None: ['content', 'name', 'lang']}
+
+
+###########################################################
+# XMPP/Jabber
+###########################################################
+
+XMPP_CLIENT_NS = u'jabber:client'
+XMPP_CLIENT_PREFIX = u'c'
+
+# see http://www.xmpp.org/extensions/xep-0004.html
+XMPP_DATA_FORM_NS = u'jabber:x:data'
+XMPP_DATA_FORM_PREFIX = u'xdata'
+
+# see http://www.xmpp.org/extensions/xep-0060.html
+XMPP_PUBSUB_NS = u'http://jabber.org/protocol/pubsub'
+XMPP_PUBSUB_PREFIX = u'pubsub'
+
+# see http://www.xmpp.org/rfcs/rfc3920.html
+XMPP_STREAM_NS = u'http://etherx.jabber.org/streams'
+XMPP_STREAM_PREFIX = u'stream'
+
+# see http://www.xmpp.org/extensions/xep-0078.html
+XMPP_AUTH_NS = u'jabber:iq:auth'
+XMPP_AUTH_PREFIX = u'auth'
+
+# see http://www.xmpp.org/rfcs/rfc3920.html
+XMPP_SASL_NS = u'urn:ietf:params:xml:ns:xmpp-sasl'
+XMPP_SASL_PREFIX = u'sasl'
+
+XMPP_TLS_NS = u'urn:ietf:params:xml:ns:xmpp-tls'
+XMPP_TLS_PREFIX = u'starttls'
+
+XMPP_BIND_NS = u'urn:ietf:params:xml:ns:xmpp-bind'
+XMPP_BIND_PREFIX = u'bind'
+
+XMPP_SESSION_NS = u'urn:ietf:params:xml:ns:xmpp-session'
+XMPP_SESSION_PREFIX = u'session'
+
+XMPP_DISCO_ITEMS_NS = u'http://jabber.org/protocol/disco#items'
+XMPP_DISCO_ITEMS_PREFIX = u'disco'
+
+XMPP_DISCO_INFO_NS = u'http://jabber.org/protocol/disco#info'
+XMPP_DISCO_INFO_PREFIX = u'info'
+
+###########################################################
+# RDF
+###########################################################
+
+RDF_PREFIX = u'rdf'
+RDF_NS = u'http://www.w3.org/1999/02/22-rdf-syntax-ns#'
+
+RDF_IMDB_PREFIX = u'imdb'
+RDF_IMDB_NS = u'http://www.csd.abdn.ac.uk/~ggrimnes/dev/imdb/IMDB#'
