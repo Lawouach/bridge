@@ -99,6 +99,27 @@ def remove_duplicate_namespaces_declaration(element, visited_ns=None):
         remove_duplicate_namespaces_declaration(child, _visited_ns)
     _visited_ns = None
 
+def find_by_id(element, id):
+    """
+    Looks for an element having the provided 'id'
+    into the children recursively.
+
+    Returns the found element or None.
+    """
+    result = None
+    for child in element.xml_children:
+        if isinstance(child, bridge.Element):
+            _id = child.get_attribute('id')
+            if _id is not None:
+                if _id.xml_text == id:
+                    result = child
+                    break
+            result = find_by_id(child, id)
+            if result is not None:
+                break
+            
+    return result
+        
 
 ###################################################################
 # For generator consumers

@@ -15,7 +15,7 @@ XHTML1_PREFIX = u'xhtml'
 ###########################################################
 ATOM10_PREFIX = u'atom'
 ATOMPUB_PREFIX = u'app'
-THR=PREFIX = u'thr'
+THR_PREFIX = u'thr'
 
 ATOM10_NS = u'http://www.w3.org/2005/Atom'
 ATOMPUB_NS = u'http://purl.org/atom/app#'
@@ -30,7 +30,8 @@ atom_as_list = {ATOM10_NS: ['author', 'contributor', 'category', 'link', 'entry'
                 ATOMPUB_NS: ['collection', 'workspace', 'categories']}
 
 atom_attribute_of_element = {None: ['type', 'term', 'href', 'rel', 'scheme', 'label',
-                                    'title', 'length', 'hreflang' 'src']}
+                                    'title', 'length', 'hreflang' 'src', 'ref'],
+                             THR_NS: ['count']}
 
 ###########################################################
 # Dublin Core
@@ -86,8 +87,13 @@ xhtml_attribute_of_element = {None: ['content', 'name', 'lang']}
 # XMPP/Jabber
 ###########################################################
 
+# see http://www.xmpp.org/rfcs/rfc3920.html
 XMPP_CLIENT_NS = u'jabber:client'
-XMPP_CLIENT_PREFIX = u'c'
+XMPP_CLIENT_PREFIX = u'client'
+
+xmpp_client_as_attr = {XMPP_CLIENT_NS: ['message', 'subject', 'body', 'thread', 'presence', 'iq']}
+xmpp_client_as_list = {XMPP_CLIENT_NS: ['error']}
+xmpp_client_attribute_of_element = {None: ['from', 'id', 'to', 'type', 'show', 'status', 'priority']}
 
 # see http://www.xmpp.org/extensions/xep-0004.html
 XMPP_DATA_FORM_NS = u'jabber:x:data'
@@ -96,6 +102,12 @@ XMPP_DATA_FORM_PREFIX = u'xdata'
 # see http://www.xmpp.org/extensions/xep-0060.html
 XMPP_PUBSUB_NS = u'http://jabber.org/protocol/pubsub'
 XMPP_PUBSUB_PREFIX = u'pubsub'
+
+xmpp_pubsub_as_attr = {XMPP_PUBSUB_NS: ['pubsub', 'create']}
+xmpp_pubsub_as_list = {XMPP_PUBSUB_NS: ['configure', 'subscribe', 'options', 'affiliations',
+                                        'items', 'publish', 'retract', 'subscription',
+                                        'subscriptions', 'unsubscribe', 'subscribe-options']}
+xmpp_pubsub_attribute_of_element = {None: ['subid']}
 
 # see http://www.xmpp.org/rfcs/rfc3920.html
 XMPP_STREAM_NS = u'http://etherx.jabber.org/streams'
@@ -112,17 +124,36 @@ XMPP_SASL_PREFIX = u'sasl'
 XMPP_TLS_NS = u'urn:ietf:params:xml:ns:xmpp-tls'
 XMPP_TLS_PREFIX = u'starttls'
 
+# see http://www.xmpp.org/rfcs/rfc3920.html
 XMPP_BIND_NS = u'urn:ietf:params:xml:ns:xmpp-bind'
 XMPP_BIND_PREFIX = u'bind'
 
+xmpp_bind_as_attr = {XMPP_BIND_NS: ['bind', 'resource', 'jid']}
+
+# see http://www.xmpp.org/rfcs/rfc3921.html
 XMPP_SESSION_NS = u'urn:ietf:params:xml:ns:xmpp-session'
 XMPP_SESSION_PREFIX = u'session'
 
+# see http://www.xmpp.org/extensions/xep-0030.html
 XMPP_DISCO_ITEMS_NS = u'http://jabber.org/protocol/disco#items'
 XMPP_DISCO_ITEMS_PREFIX = u'disco'
 
+# see http://www.xmpp.org/extensions/xep-0030.html
 XMPP_DISCO_INFO_NS = u'http://jabber.org/protocol/disco#info'
 XMPP_DISCO_INFO_PREFIX = u'info'
+
+xmpp_as_attr = {}
+xmpp_as_attr.update(xmpp_client_as_attr)
+xmpp_as_attr.update(xmpp_pubsub_as_attr)
+xmpp_as_attr.update(xmpp_bind_as_attr)
+
+xmpp_as_list = {}
+xmpp_as_list.update(xmpp_client_as_list)
+xmpp_as_list.update(xmpp_pubsub_as_list)
+
+xmpp_attribute_of_element = {}
+xmpp_attribute_of_element.update(xmpp_client_attribute_of_element)
+xmpp_attribute_of_element.update(xmpp_pubsub_attribute_of_element)
 
 ###########################################################
 # RDF

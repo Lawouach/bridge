@@ -42,8 +42,28 @@ from bridge.filter import fetch_child, fetch_children
 
 from bridge.common import  XML_NS, XMLNS_NS 
 
-__all__ = ['Attribute', 'Element', 'PI', 'Comment', 'Document']
+__all__ = ['Attribute', 'Element', 'PI', 'Comment', 'Document', 'set_bridge_parser']
 
+def set_bridge_parser(parser_name='default'):
+    """
+    Loads and sets the given parser.
+    """
+    if parser_name == 'default':
+        from bridge.parser.bridge_default import Parser
+        Element.parser = Parser
+    elif parser_name == 'amara':
+        from bridge.parser.bridge_amara import Parser
+        Element.parser = Parser
+    elif parser_name == 'lxml':
+        from bridge.parser.bridge_lxml import Parser
+        Element.parser = Parser
+    elif parser_name == 'elementtree':
+        from bridge.parser.bridge_elementtree import Parser
+        Element.parser = Parser    
+    elif parser_name == 'dotnet':
+        from bridge.parser.bridge_dotnet import Parser
+        Element.parser = Parser
+ 
 class PI(object):
     def __init__(self, target, data, parent=None):
         self.target = target
@@ -175,6 +195,9 @@ class Element(object):
         elif isinstance(Element.as_list, dict):
             self.as_list.update(Element.as_list)
 
+        if self.xml_root and self.xml_root.as_attribute_of_element:
+            self.as_attribute_of_element.update(self.xml_root.as_attribute_of_element)
+
         if self.xml_parent:
             self.xml_parent.xml_children.append(self)
 
@@ -223,7 +246,9 @@ class Element(object):
         return Element.load(self.xml(encoding=self.encoding, omit_declaration=True))
 
     def clone(self):
-        return Element.load(self.xml(encoding=self.encoding, omit_declaration=True))
+        return Element.load(self.xml(encoding=self.encoding, omit_declaration=True),
+                            as_attribute=self.as_attribute, as_list=self.as_list,
+                            as_attribute_of_element=self.as_attribute_of_element)
         
     def __delattr__(self, name):
         """
