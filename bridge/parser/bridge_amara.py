@@ -88,5 +88,5 @@ class Parser(object):
         document.as_list = as_list or {}
         document.as_attribute_of_element = as_attribute_of_element or {}
         self.__deserialize_fragment(doc, document)
-        
+
         return document
