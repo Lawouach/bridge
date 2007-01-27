@@ -137,7 +137,6 @@ class Parser(object):
                         nsmap[attr.xml_name] = attr.xml_text
                 element = SETX(parent, qname, attrib=attrs, nsmap=nsmap)
 
-                print encoding
                 if child.xml_text:
                     element.text = child.xml_text
                 previous_sibling = element
