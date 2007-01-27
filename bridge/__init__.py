@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-__version__ = "0.2.2"
+__version__ = "0.2.3"
 __authors__ = ["Sylvain Hellegouarch (sh@defuze.org)"]
 __contributors__ = ['David Turner']
-__date__ = "2007/01/15"
+__date__ = "2007/01/27"
 __copyright__ = """
 Copyright (c) 2006, 2007 Sylvain Hellegouarch
 All rights reserved.
@@ -459,7 +459,6 @@ class Element(object):
         Applies a validator on this element
         """
         validator(self, **kwargs)
-
 
 class Document(Element):
     def __init__(self):
