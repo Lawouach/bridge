@@ -34,6 +34,7 @@ class XMLGeneratorFixed(xss.XMLGenerator):
         element = []
         element.append('<%s' % qname)
         visited_ns = visited_ns or []
+        serialized_ns = []
         for mapping in visited_ns:
             match = ns_mapping_rx.match(mapping)
             uri, prefix = match.groups()
@@ -41,6 +42,8 @@ class XMLGeneratorFixed(xss.XMLGenerator):
                 element.append(' xmlns:%s="%s"' % (prefix, uri))
             elif uri and not prefix:
                 element.append(' xmlns="%s"' % uri)
+            if uri:
+                serialized_ns.append(uri)
 
         if _set_empty_ns:
             element.append(' xmlns=""')
@@ -55,6 +58,8 @@ class XMLGeneratorFixed(xss.XMLGenerator):
             elif ns == xd.XMLNS_NAMESPACE:
                 # should have been handled and we do not need to take care of it here
                 continue
+            elif ns in serialized_ns:
+                name = '%s:%s' % (prefix, name)
             else:
                 name = 'xmlns:%s="%s" %s:%s' % (prefix, ns, prefix, name)
 
@@ -127,7 +132,8 @@ class Parser(object):
         for attr in node.xml_attributes:
             if attr.xml_ns == xd.XMLNS_NAMESPACE:
                 if attr.xml_text != node.xml_ns:
-                    self.__set_prefix_mapping(visited_ns, parent_visited_ns, attr.xml_name, attr.xml_text)
+                    self.__set_prefix_mapping(visited_ns, parent_visited_ns,
+                                              attr.xml_name, attr.xml_text)
                 
     def __serialize_element(self, handler, element, visited_ns=None, set_empty_ns=False, encoding=ENCODING):
         children = element.xml_children
@@ -154,7 +160,7 @@ class Parser(object):
                     _set_empty_ns = True
 
                 attrs = self.__attrs(child)
-                
+
                 self.__set_prefix_mapping(_visited_ns, visited_ns, prefix, ns)
                 self.__set_visited_ns_from_attributes(_visited_ns, visited_ns, child)
                 handler.startElementNS((ns, name), qname, attrs, _visited_ns, _set_empty_ns)
@@ -216,7 +222,7 @@ class Parser(object):
                 doc.unlink()
             except KeyError:
                 pass
-            
+
         document.filtrate(rund)
         document.filtrate(rdnd)
         return document
