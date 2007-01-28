@@ -65,10 +65,10 @@ ODF_DRAWING_PREFIX = u'drawing'
 ODF_PRESENTATION_NS = u'urn:oasis:names:tc:opendocument:xmlns:presentation:1.0'
 ODF_PRESENTATION_PREFIX = u'presentation'
 
-odf_meta_as_attr = {ODF_META_NS: ['document-statistic', 'creation-date',
-                                  'keyword']}
+odf_meta_as_attr = {ODF_META_NS: ['document-statistic', 'creation-date']}
+odf_meta_as_list = {ODF_META_NS: ['keyword']}
 
-odf_office_as_attr = {ODF_OFFICE_NS:['meta']}
+odf_office_as_attr = {ODF_OFFICE_NS: ['meta']}
 odf_office_as_attr.update(odf_meta_as_attr)
 odf_office_as_attr.update(dc_as_attr)
 
