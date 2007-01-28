@@ -181,7 +181,7 @@ def requires_summary(element):
     #     but is not an XML media type [RFC3023], does not begin with "text/",
     #     and does not end with "/xml" or "+xml".
     needs_summary = False
-    content = element.get_child('element', ATOM10_NS)
+    content = element.get_child('content', ATOM10_NS)
     if content:
         src = content.get_attribute_ns('src', ATOM10_NS)
         mime_type = content.get_attribute_ns('type', ATOM10_NS)
