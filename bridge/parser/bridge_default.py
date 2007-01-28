@@ -47,7 +47,7 @@ class XMLGeneratorFixed(xss.XMLGenerator):
 
         if _set_empty_ns:
             element.append(' xmlns=""')
-        
+
         self._undeclared_ns_maps = []
 
         for ((ns, name, prefix), value) in attrs.items():
@@ -65,6 +65,9 @@ class XMLGeneratorFixed(xss.XMLGenerator):
 
             element.append(' %s=%s' % (name, quoteattr(value)))
 
+            if ns not in serialized_ns:
+                serialized_ns.append(ns)
+                
         element.append('>')
         self._write(''.join(element))
 
