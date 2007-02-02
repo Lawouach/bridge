@@ -102,6 +102,12 @@ class BridgeIncrementalHandler(xss.XMLGenerator):
         """
         self._dispatchers[(level, (namespace, local_name))] = dispatcher
 
+    def startDocument(self):
+        self._current_el = self._root = D()
+        self._current_level = 0
+        self._as_cdata = False
+        xss.XMLGenerator.startDocument(self)
+
     # see http://www.xml.com/pub/a/2003/03/10/python.html
     def _split_qname(self, qname):
         qname_split = qname.split(':')
