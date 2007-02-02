@@ -193,7 +193,9 @@ class Parser(object):
             elif isinstance(child, PI):
                 writer.pi(child.target, child.data)
             elif isinstance(child, basestring):
-                writer.data(child)
+                #if current.as_cdata:
+                #    child = '<![CDATA[%s]]>' % child
+                writer.data(child.encode(encoding))
             elif isinstance(child, Element):              
                 qname = self.__qname(child)
                 attrs = self.__attrs(child)

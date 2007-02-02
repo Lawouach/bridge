@@ -121,6 +121,8 @@ class Parser(object):
                 parent.append(element)
                 previous_sibling = element
             elif isinstance(child, basestring):
+                #if current.as_cdata:
+                #    child = '<![CDATA[%s]]>' % child
                 if previous_sibling is not None:
                     previous_sibling.tail = child
                 else:

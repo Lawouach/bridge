@@ -76,7 +76,13 @@ class XMLGeneratorFixed(xss.XMLGenerator):
 
     def comment(self, content):
         self._write('<!--%s-->' % content)
+        
+    def startCDATA(self):
+        self._write('<![CDATA[')
 
+    def endCDATA(self):
+        self._write(']]>')
+        
 class Parser(object):
     def __deserialize_fragment(self, current, parent):
         if current.attributes:
@@ -87,17 +93,23 @@ class Parser(object):
                 
         children = current.childNodes
         for child in children:
-            if child.nodeType == xd.Node.TEXT_NODE:
+            nt = child.nodeType
+            if nt == xd.Node.TEXT_NODE:
                 if len(children) == 1:
                     parent.xml_text = child.data
                 else:
                     parent.xml_children.append(child.data)
-
-            elif child.nodeType == xd.Node.COMMENT_NODE:
+            elif nt == xd.Node.CDATA_SECTION_NODE:
+                parent.as_cdata = True
+                if len(children) == 1:
+                    parent.xml_text = child.data
+                else:
+                    parent.xml_children.append(child.data)
+            elif nt == xd.Node.COMMENT_NODE:
                 bridge.Comment(data=unicode(child.data), parent=parent)
-            elif child.nodeType == xd.Node.PROCESSING_INSTRUCTION_NODE:
+            elif nt == xd.Node.PROCESSING_INSTRUCTION_NODE:
                 bridge.PI(target=unicode(child.target), data=unicode(child.data), parent=parent)
-            elif child.nodeType == xd.Node.ELEMENT_NODE:
+            elif nt == xd.Node.ELEMENT_NODE:
                 element = bridge.Element(name=child.localName, prefix=child.prefix,
                                          namespace=child.namespaceURI, parent=parent)
 
@@ -144,7 +156,11 @@ class Parser(object):
             _visited_ns = []
             _set_empty_ns = False
             if isinstance(child, basestring):
+                if element.as_cdata:
+                    handler.startCDATA()
                 handler.characters(child)
+                if element.as_cdata:
+                    handler.endCDATA()
             elif isinstance(child, bridge.Comment):
                 handler.comment(child.data)
             elif isinstance(child, bridge.PI):

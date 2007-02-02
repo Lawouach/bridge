@@ -51,6 +51,8 @@ class Parser(object):
             
         for child in element.xml_children:
             if isinstance(child, basestring):
+                #if element.as_cdata:
+                #    child = u'<![CDATA[%s]]>' % child
                 node.xml_append(child)
             elif isinstance(child, PI):
                 child_node = amara.bindery.pi_base(child.target, child.data)
