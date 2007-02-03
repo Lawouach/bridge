@@ -11,6 +11,7 @@ from bridge import Attribute as A
 from bridge import Comment as C
 from bridge import PI
 from bridge import Document as D
+from bridge.filter import lookup
 
 __all__ = ['create_parser', 'BridgeIncrementalHandler']
 
@@ -49,15 +50,22 @@ class BridgeIncrementalHandler(xss.XMLGenerator):
 
         Note that this handler has limitations as it doesn't
         manage DTDs.
-        
+
+        Note also that this class is not thread-safe.
         """
         xss.XMLGenerator.__init__(self, out, encoding)
         self._current_el = self._root = D()
         self._current_level = 0
         self._as_cdata = False
         self._dispatchers = {}
+        self._path_dispatchers = {}
         self.enable_dispatching = enable_dispatching
-        
+        self.enable_dispatching_by_path = False
+
+        self.as_attribute = {}
+        self.as_list = {}
+        self.as_attribute_of_element = {}
+
     def register_at_level(self, level, dispatcher):
         """Registers a dispatcher at a given level within the
         XML tree of elements being built.
@@ -123,8 +131,19 @@ class BridgeIncrementalHandler(xss.XMLGenerator):
         if key in self._dispatchers:
             del self._dispatchers[key]
 
+    def register_by_path(self, path, dispatcher):
+        self._path_dispatchers[path] = dispatcher
+
+    def unregister_by_path(self, path):
+        if path in self._path_dispatchers:
+            del self._path_dispatchers[path]
+
     def startDocument(self):
-        self._current_el = self._root = D()
+        self._root = D()
+        self._root.as_attribute = self.as_attribute
+        self._root.as_list = self.as_list
+        self._root.as_attribute_of_element = self.as_attribute_of_element
+        self._current_el = self._root
         self._current_level = 0
         self._as_cdata = False
         xss.XMLGenerator.startDocument(self)
@@ -172,6 +191,12 @@ class BridgeIncrementalHandler(xss.XMLGenerator):
                     pattern = (self._current_level, pattern)
                     if pattern in self._dispatchers:
                         self._dispatchers[pattern](self._current_el)
+        elif self.enable_dispatching_by_path:
+            for path in self._path_dispatchers:
+                match_found = self._current_el.filtrate(lookup, path=path)
+                if match_found:
+                    self._path_dispatchers[path](match_found)
+                    break
         self._current_el = self._current_el.xml_parent
 
     def characters(self, content):

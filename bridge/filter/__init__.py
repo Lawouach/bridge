@@ -3,7 +3,9 @@
 
 __all__ = ['remove_duplicate_namespaces_declaration',
            'remove_useless_namespaces_decalaration',
-           'fetch_child', 'fetch_children', 'element_children']
+           'fetch_child', 'fetch_children', 'element_children', 'lookup']
+
+import re
 
 import bridge
 from bridge.common import XMLNS_NS
@@ -21,9 +23,8 @@ def fetch_child(element, child_name, child_ns):
     child_name -- name of the element to lookup
     child_ns -- namespace of the element to lookup
     """
-    element_type = type(element)
     for child in element.xml_children:
-        if isinstance(child, element_type):
+        if isinstance(child, bridge.Element):
             if child.xml_ns == child_ns:
                 if child.xml_name == child_name:
                     return child
@@ -119,7 +120,107 @@ def find_by_id(element, id):
                 break
             
     return result
-        
+
+def tokenize_path(path):
+    def handle_ns(start):
+        pos = path.find('}', start)
+        end = path.find('/', pos)
+        return end
+
+    path = path.lstrip('.')
+    start = 0
+    length = len(path)
+    while 1:
+        if path[start] == '{':
+            end = handle_ns(start)
+        elif path[start] == '/':
+            if path[start + 1] == '{':
+                end = handle_ns(start)
+            else:
+                end = path.find('/', start + 1)
+        else:
+            end = path.find('/', start)
+            
+        if end != -1:
+            yield path[start:end].strip('/')
+        else:
+            yield path[start:].strip('/')
+            
+        start = end
+
+        if (end == length) or (end == -1):
+            break
+
+_namespace_simple_regex = re.compile('{(.*)}(\w*)')
+_query_simple_regex = re.compile('(\w*)\[@(\w*)\=[\"|\'](\w*)[\"|\']\]')
+
+def next_token(path):
+    for token in tokenize_path(path):
+        uri = None
+        local_name = token
+        match = _namespace_simple_regex.search(token)
+        if match:
+            uri, local_name = match.groups()
+        match = _query_simple_regex.search(token)
+        if match:
+            yield (uri, match.group(1), match.group(2), match.group(3))
+        else:
+            yield (uri, local_name, None, None)
+
+def lookup(element, path):
+    """Perfoms a lookup of an element matching the path provided
+    This path looks like an XPath query but that's where the
+    comparison should stop. This is not an XPath engine.
+
+    >>> from bridge import Element as E
+    >>> from bridge.filter import lookup
+    >>> e = E.load('<a:o xmlns:a="ui"><b h="gr"><c/></b></a:o>')
+    >>> e.filtrate(lookup, path=u'/{ui}o/b[@h="gr"]/c')
+    <c element at 0xb7c0c30cL />
+    >>> e.filtrate(lookup, path=u'{ui}o/b[@h="gr"]/c')
+    <c element at 0xb7c0c30cL />
+    >>> e.filtrate(lookup, path=u'./{ui}o/b[@h="gr"]/c')
+    <c element at 0xb7c0c30cL />
+
+    If the ``path`` starts with a '/' the matching will be
+    applied from the root element otherwise from the current
+    element (like when it starts with './').
+
+    If you need to provide a namespace it must be within {} right
+    before the local name.
+
+    Attribute matching is extremely simple and you can only match
+    one attribute per branch.
+
+    This ultimately returns the matching element or None.
+    """
+    start_at = element
+    if path[0] == '/':
+        if not isinstance(element, bridge.Document):
+            start_at = bridge.Document()
+            start_at.xml_children.append(element.xml_root)
+        else:
+            start_at = element
+    
+    found_match = None
+    for (uri, local_name, attr_name, attr_value) in next_token(path):
+        child = start_at.get_child(local_name, ns=uri)
+        if child:
+            if attr_name:
+                attr = child.get_attribute(attr_name)
+                if attr and attr.xml_text == attr_value:
+                    found_match = start_at = child
+                else:
+                    found_match = None
+                    break
+            else:
+                found_match = start_at = child
+        else:
+            found_match = None
+            break
+
+    return found_match
+    
 
 ###################################################################
 # For generator consumers
