@@ -50,6 +50,9 @@ def set_bridge_parser(parser_name='default'):
     """
     if parser_name == 'default':
         from bridge.parser.bridge_default import Parser
+        Element.parser = Parser 
+    elif parser_name == 'expat':
+        from bridge.parser.bridge_expat import Parser
         Element.parser = Parser
     elif parser_name == 'amara':
         from bridge.parser.bridge_amara import Parser
@@ -63,6 +66,7 @@ def set_bridge_parser(parser_name='default'):
     elif parser_name == 'dotnet':
         from bridge.parser.bridge_dotnet import Parser
         Element.parser = Parser
+
  
 class PI(object):
     def __init__(self, target, data, parent=None):
