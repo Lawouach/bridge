@@ -24,6 +24,12 @@ def get_first_available_parser():
     on your system.
     """
     try:
+        from bridge.parser.bridge_expat import Parser
+        return Parser
+    except ImportError:
+        pass
+    
+    try:
         from bridge.parser.bridge_amara import Parser
         return Parser
     except ImportError:
