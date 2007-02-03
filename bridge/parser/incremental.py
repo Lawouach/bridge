@@ -71,6 +71,12 @@ class BridgeIncrementalHandler(xss.XMLGenerator):
         """
         self._dispatchers[level] = dispatcher
 
+    def unregister_at_level(self, level):
+        """Unregisters a dispatcher at a given level
+        """
+        if level in self._dispatchers:
+            del self._dispatchers[level]
+
     def register_on_element(self, local_name, dispatcher, namespace=None):
         """Registers a dispatcher on a given element met during
         the parsing.
@@ -83,6 +89,13 @@ class BridgeIncrementalHandler(xss.XMLGenerator):
         one parameter, a bridge.Element instance.
         """
         self._dispatchers[(namespace, local_name)] = dispatcher
+
+    def unregister_on_element(self, local_name, namespace=None):
+        """Unregisters a dispatcher for a specific element.
+        """
+        key = (namespace, local_name)
+        if key in self._dispatchers:
+            del self._dispatchers[key]
         
     def register_on_element_per_level(self, local_name, level, dispatcher, namespace=None):
         """Registers a dispatcher at a given level within the
@@ -101,6 +114,14 @@ class BridgeIncrementalHandler(xss.XMLGenerator):
         one parameter, a bridge.Element instance.
         """
         self._dispatchers[(level, (namespace, local_name))] = dispatcher
+
+    def unregister_on_element_per_level(self, local_name, level, namespace=None):
+        """Unregisters a dispatcher at a given level for a specific
+        element.
+        """
+        key = (level, (namespace, local_name))
+        if key in self._dispatchers:
+            del self._dispatchers[key]
 
     def startDocument(self):
         self._current_el = self._root = D()
