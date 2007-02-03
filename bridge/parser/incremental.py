@@ -191,7 +191,7 @@ class BridgeIncrementalHandler(xss.XMLGenerator):
                     pattern = (self._current_level, pattern)
                     if pattern in self._dispatchers:
                         self._dispatchers[pattern](self._current_el)
-        elif self.enable_dispatching_by_path:
+        if self.enable_dispatching_by_path:
             for path in self._path_dispatchers:
                 match_found = self._current_el.filtrate(lookup, path=path)
                 if match_found:
