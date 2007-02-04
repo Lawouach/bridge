@@ -24,8 +24,7 @@ class Parser(object):
             doc = source.read()
 
         _parser, _handler, _output = create_parser()
-        _handler.enable_dispatching = False
-        _handler.enable_dispatching_by_path = False
+        _handler.disable_dispatching()
         _handler.as_attribute = as_attribute or {}
         _handler.as_list = as_list or {}
         _handler.as_attribute_of_element = as_attribute_of_element or {}

@@ -16,7 +16,7 @@ from bridge.filter import lookup
 __all__ = ['create_parser', 'BridgeIncrementalHandler']
 
 class BridgeIncrementalHandler(xss.XMLGenerator):
-    def __init__(self, out, encoding='UTF-8', enable_dispatching=True):
+    def __init__(self, out, encoding='UTF-8'):
         """This handler allows the incremental parsing of an XML document
         while providing simple ways to dispatch at precise point of the
         parsing back to the caller.
@@ -57,14 +57,31 @@ class BridgeIncrementalHandler(xss.XMLGenerator):
         self._current_el = self._root = D()
         self._current_level = 0
         self._as_cdata = False
-        self._dispatchers = {}
+        self._level_dispatchers = {}
+        self._element_dispatchers = {}
+        self._element_level_dispatchers = {}
         self._path_dispatchers = {}
-        self.enable_dispatching = enable_dispatching
+        
+        self.enable_level_dispatching = False
+        self.enable_element_dispatching = False
+        self.enable_element_by_level_dispatching = False
         self.enable_dispatching_by_path = False
 
         self.as_attribute = {}
         self.as_list = {}
         self.as_attribute_of_element = {}
+
+    def disable_dispatching(self):
+        self.enable_level_dispatching = False
+        self.enable_element_dispatching = False
+        self.enable_element_by_level_dispatching = False
+        self.enable_dispatching_by_path = False
+
+    def enable_dispatching(self):
+        self.enable_level_dispatching = True
+        self.enable_element_dispatching = True
+        self.enable_element_by_level_dispatching = True
+        self.enable_dispatching_by_path = True
 
     def register_at_level(self, level, dispatcher):
         """Registers a dispatcher at a given level within the
@@ -77,14 +94,17 @@ class BridgeIncrementalHandler(xss.XMLGenerator):
         The ``dispatcher`` is a callable object only taking
         one parameter, a bridge.Element instance.
         """
-        self._dispatchers[level] = dispatcher
+        self.enable_level_dispatching = True
+        self._level_dispatchers[level] = dispatcher
 
     def unregister_at_level(self, level):
         """Unregisters a dispatcher at a given level
         """
-        if level in self._dispatchers:
-            del self._dispatchers[level]
-
+        if level in self._level_dispatchers:
+            del self._level_dispatchers[level]
+        if len(self._level_dispatchers) == 0:
+            self.enable_level_dispatching = False
+            
     def register_on_element(self, local_name, dispatcher, namespace=None):
         """Registers a dispatcher on a given element met during
         the parsing.
@@ -96,15 +116,18 @@ class BridgeIncrementalHandler(xss.XMLGenerator):
         The ``dispatcher`` is a callable object only taking
         one parameter, a bridge.Element instance.
         """
-        self._dispatchers[(namespace, local_name)] = dispatcher
+        self.enable_element_dispatching = True
+        self._element_dispatchers[(namespace, local_name)] = dispatcher
 
     def unregister_on_element(self, local_name, namespace=None):
         """Unregisters a dispatcher for a specific element.
         """
         key = (namespace, local_name)
-        if key in self._dispatchers:
-            del self._dispatchers[key]
-        
+        if key in self._element_dispatchers:
+            del self._element_dispatchers[key]
+        if len(self._element_dispatchers) == 0:
+            self.enable_element_dispatching = False
+            
     def register_on_element_per_level(self, local_name, level, dispatcher, namespace=None):
         """Registers a dispatcher at a given level within the
         XML tree of elements being built as well as for a
@@ -121,22 +144,28 @@ class BridgeIncrementalHandler(xss.XMLGenerator):
         The ``dispatcher`` is a callable object only taking
         one parameter, a bridge.Element instance.
         """
-        self._dispatchers[(level, (namespace, local_name))] = dispatcher
+        self.enable_element_by_level_dispatching = True
+        self._element_level_dispatchers[(level, (namespace, local_name))] = dispatcher
 
     def unregister_on_element_per_level(self, local_name, level, namespace=None):
         """Unregisters a dispatcher at a given level for a specific
         element.
         """
         key = (level, (namespace, local_name))
-        if key in self._dispatchers:
-            del self._dispatchers[key]
+        if key in self._element_level_dispatchers:
+            del self._element_level_dispatchers[key]
+        if len(self._element_level_dispatchers) == 0:
+            self.enable_element_by_level_dispatching = False
 
     def register_by_path(self, path, dispatcher):
+        self.enable_dispatching_by_path = True
         self._path_dispatchers[path] = dispatcher
 
     def unregister_by_path(self, path):
         if path in self._path_dispatchers:
             del self._path_dispatchers[path]
+        if len(self._path_dispatchers) == 0:
+            self.enable_dispatching_by_path = False
 
     def startDocument(self):
         self._root = D()
@@ -179,21 +208,22 @@ class BridgeIncrementalHandler(xss.XMLGenerator):
         self._current_level = self._current_level + 1
         
     def endElementNS(self, name, qname):
-        self._current_level = self._current_level - 1
-        if self.enable_dispatching:
-            if self._current_level in self._dispatchers:
-                self._dispatchers[self._current_level](self._current_el)
-            else:
-                pattern = (self._current_el.xml_ns, self._current_el.xml_name)
-                if pattern in self._dispatchers:
-                    self._dispatchers[pattern](self._current_el)
-                else:
-                    pattern = (self._current_level, pattern)
-                    if pattern in self._dispatchers:
-                        self._dispatchers[pattern](self._current_el)
+        self._current_level = current_level = self._current_level - 1
+        current_element = self._current_el
+        if self.enable_level_dispatching:
+            if current_level in self._level_dispatchers:
+                self._level_dispatchers[current_level](current_element)
+        if self.enable_element_dispatching:
+            pattern = (current_element.xml_ns, current_element.xml_name)
+            if pattern in self._element_dispatchers:
+                self._element_dispatchers[pattern](current_element)
+        if self.enable_element_by_level_dispatching:
+            pattern = (current_level, (current_element.xml_ns, current_element.xml_name))
+            if pattern in self._element_level_dispatchers:
+                self._element_level_dispatchers[pattern](current_element)
         if self.enable_dispatching_by_path:
             for path in self._path_dispatchers:
-                match_found = self._current_el.filtrate(lookup, path=path)
+                match_found = current_element.filtrate(lookup, path=path)
                 if match_found:
                     self._path_dispatchers[path](match_found)
                     break
