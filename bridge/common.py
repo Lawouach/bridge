@@ -142,6 +142,9 @@ XMPP_DISCO_ITEMS_PREFIX = u'disco'
 XMPP_DISCO_INFO_NS = u'http://jabber.org/protocol/disco#info'
 XMPP_DISCO_INFO_PREFIX = u'info'
 
+XMPP_ROSTER_NS = u'jabber:iq:roster'
+XMPP_ROSTER_PREIX = u'roster'
+
 xmpp_as_attr = {}
 xmpp_as_attr.update(xmpp_client_as_attr)
 xmpp_as_attr.update(xmpp_pubsub_as_attr)
