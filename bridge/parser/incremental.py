@@ -41,7 +41,7 @@ class BridgeIncrementalHandler(xss.XMLGenerator):
 
         >>> from bridge.parser.incremental import create_parser
         >>> p, h, s = create_parser()
-        >>> h.enable_dispatching = False
+        >>> h.disable_dispatching()
         >>> p.feed('<r><b/></r>')
         >>> h.doc()
         <r element at 0xb7ca99ccL />
@@ -192,12 +192,11 @@ class BridgeIncrementalHandler(xss.XMLGenerator):
 
     def startElementNS(self, name, qname, attrs):
         uri, local_name = name
-        e = E(local_name, parent=self._current_el)
-        
+        prefix = None
         if uri:
-            e.xml_ns = uri
-            e.xml_prefix = self._current_context[uri]
-            
+            prefix = self._current_context[uri]
+        e = E(local_name, prefix=prefix, namespace=uri, parent=self._current_el)
+        
         for name, value in attrs.items():
             (namespace, local_name) = name
             qname = attrs.getQNameByName(name)
