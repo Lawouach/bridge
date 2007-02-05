@@ -36,8 +36,7 @@ class BridgeIncrementalHandler(xss.XMLGenerator):
         <b xmlns=""></b>
         
         Alternatively this can even be used as a generic parser. If you
-        don't need dispatching you simply set ``enable_dispatching`` to
-        False.
+        don't need dispatching you simply call ``disable_dispatching``.
 
         >>> from bridge.parser.incremental import create_parser
         >>> p, h, s = create_parser()
