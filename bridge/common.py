@@ -21,7 +21,7 @@ ATOM10_NS = u'http://www.w3.org/2005/Atom'
 ATOMPUB_NS = u'http://purl.org/atom/app#'
 THR_NS = u'http://purl.org/syndication/thread/1.0'
 
-atom_as_attr = {ATOM10_NS: ['id', 'title', 'updated', 'published', 'icon', 'logo', 'generator',
+atom_as_attr = {ATOM10_NS: ['feed', 'id', 'title', 'updated', 'published', 'icon', 'logo', 'generator',
                             'rights', 'subtitle', 'content', 'summary', 'name', 'uri', 'email'],
                 ATOMPUB_NS: ['edited', 'accept'],
                 THR_NS: ['in-reply-to', 'total']}
