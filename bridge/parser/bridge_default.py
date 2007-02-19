@@ -127,7 +127,7 @@ class Parser(object):
             if attrns != xd.XMLNS_NAMESPACE:
                 if attrns:
                     attrns = attrns.encode(attr.encoding)
-                name = attr.xml_name.encode(attr.encoding)
+                name = attr.xml_name.encode(attr.encoding).replace('_', '-')
                 attrs[(attrns, name, attr.xml_prefix)] = attr.xml_text or ''
             
         return attrs
@@ -172,7 +172,7 @@ class Parser(object):
                 if child.xml_ns:
                     ns = child.xml_ns
                 
-                name = child.xml_name
+                name = child.xml_name.replace('_', '-')
                 qname = self.__qname(name, prefix=prefix)
 
                 if not child.xml_prefix and not child.xml_ns and not set_empty_ns:

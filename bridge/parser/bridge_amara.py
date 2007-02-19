@@ -33,15 +33,17 @@ class Parser(object):
 
     def __qname(self, name, prefix=None):
         if prefix:
-            return "%s:%s" % (prefix, name)
+            return "%s:%s" % (prefix, name.replace('_', '-'))
         return name
 
     def __serialize_attribute(self, node, attr):
         if attr.xml_prefix and attr.xml_ns:
-            node.xml_set_attribute((u'%s:%s' % (attr.xml_prefix, attr.xml_name), attr.xml_ns),
+            node.xml_set_attribute((u'%s:%s' % (attr.xml_prefix,
+                                                attr.xml_name.replace('_', '-')),
+                                    attr.xml_ns),
                                    attr.xml_text)
         else:
-            node.xml_set_attribute(attr.xml_name, attr.xml_text)
+            node.xml_set_attribute(attr.xml_name.replace('_', '-'), attr.xml_text)
 
     def __serialize_element(self, node, element, encoding):
         for attr in element.xml_attributes:

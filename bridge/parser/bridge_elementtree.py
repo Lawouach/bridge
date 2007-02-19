@@ -151,8 +151,8 @@ class BridgeXMLWriter(XMLWriter):
 class Parser(object):
     def __qname(self, element):
         if element.xml_prefix:
-            return "%s:%s" % (element.xml_prefix, element.xml_name)
-        return element.xml_name
+            return "%s:%s" % (element.xml_prefix, element.xml_name.replace('_', '-'))
+        return element.xml_name.replace('_', '-')
 
     def __qname_attr(self, attr):
         if attr.xml_ns == xd.XMLNS_NAMESPACE:
@@ -160,9 +160,9 @@ class Parser(object):
                 return "xmlns"
             
         if attr.xml_prefix:
-            return "%s:%s" % (attr.xml_prefix, attr.xml_name)
+            return "%s:%s" % (attr.xml_prefix, attr.xml_name.replace('_', '-'))
         
-        return attr.xml_name
+        return attr.xml_name.replace('_', '-')
 
     def __attrs(self, node):
         attrs = {}

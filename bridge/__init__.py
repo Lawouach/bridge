@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-__version__ = "0.2.4"
+__version__ = "0.2.5"
 __authors__ = ["Sylvain Hellegouarch (sh@defuze.org)"]
 __contributors__ = ['David Turner']
-__date__ = "2007/02/02"
+__date__ = "2007/02/19"
 __copyright__ = """
 Copyright (c) 2006, 2007 Sylvain Hellegouarch
 All rights reserved.
@@ -108,6 +108,9 @@ class Attribute(object):
             raise TypeError, "Attribute's value must be an unicode object or None"
         
         self.xml_parent = parent
+        self.xml_ns = namespace
+        if name:
+            name = name.replace('-', '_').replace('.', '_')
         self.xml_name = name
         self.xml_text = value
         self.xml_prefix = prefix
@@ -124,8 +127,6 @@ class Attribute(object):
 
             attrs = self.as_attribute_of_element.get(self.xml_ns, [])
             if self.xml_name in attrs:
-                name = self.xml_name.replace('-', '_')
-                name = name.replace('.', '_')
                 if not hasattr(self.xml_parent, name):
                     setattr(self.xml_parent, name, self.xml_text)
 
@@ -184,6 +185,8 @@ class Element(object):
         self.xml_parent = parent
         self.xml_prefix = prefix
         self.xml_ns = namespace
+        if name:
+            name = name.replace('-', '_').replace('.', '_')
         self.xml_name = name
         self.xml_text = content
         self.xml_children = []
@@ -210,12 +213,8 @@ class Element(object):
             as_list_elts = self.as_list.get(self.xml_ns, [])
 
             if self.xml_name in as_attr_elts:
-                name = self.xml_name.replace('-', '_')
-                name = name.replace('.', '_')
                 setattr(self.xml_parent, name, self)
             elif self.xml_name in as_list_elts:
-                name = self.xml_name.replace('-', '_')
-                name = name.replace('.', '_')
                 if not hasattr(self.xml_parent, name):
                     setattr(self.xml_parent, name, [])
                 els = getattr(self.xml_parent, name)

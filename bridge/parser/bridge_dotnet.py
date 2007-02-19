@@ -44,12 +44,12 @@ class Parser(object):
     
     def __qname(self, name, prefix=None):
         if prefix:
-            return "%s:%s" % (prefix, name)
+            return "%s:%s" % (prefix, name.replace('_', '-'))
         return name
 
     def __attrs(self, node, element):
         for attr in element.xml_attributes:
-            name = attr.xml_name
+            name = attr.xml_name.replace('_', '-')
             if attr.xml_ns:
                 node.SetAttribute(name, attr.xml_ns, attr.xml_text)
             else:

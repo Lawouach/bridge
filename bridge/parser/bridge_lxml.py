@@ -90,8 +90,8 @@ class Parser(object):
 
     def __qname(self, element):
         if element.xml_ns:
-            return "{%s}%s" % (element.xml_ns, element.xml_name)
-        return element.xml_name
+            return "{%s}%s" % (element.xml_ns, element.xml_name.replace('_', '-'))
+        return element.xml_name.replace('_', '-')
     
     def __attrs(self, node):
         attrs = {}
@@ -99,7 +99,7 @@ class Parser(object):
             attrns = attr.xml_ns
             if attrns is not None:
                 attrns = attrns.encode(attr.encoding)
-            name = attr.xml_name
+            name = attr.xml_name.replace('_', '-')
             if name is not None:
                 name = attr.xml_name.encode(attr.encoding)
             if attrns:
