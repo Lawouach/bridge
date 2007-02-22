@@ -13,7 +13,7 @@ __all__ = ['Parser']
 import clr
 clr.AddReference('System.Xml')
 import System.Xml as sx
-from System import Array, Byte
+from System import Array, Byte, String
 from System.IO import MemoryStream, StreamReader, SeekOrigin
 from System.Text import Encoding
 
@@ -30,13 +30,23 @@ class Parser(object):
                 
         children = current.ChildNodes
         for child in children:
-            if child.NodeType == sx.XmlNodeType.Text:
+            nt = child.NodeType
+            if nt == sx.XmlNodeType.Text:
                 if children.Count == 1:
-                    parent.xml_text = unicode(child.Value)
+                    parent.xml_text = child.Value
                 else:
-                    parent.xml_children.append(unicode(child.Value))
-
-            else:
+                    parent.xml_children.append(child.Value)
+            elif nt == sx.XmlNodeType.CDATA:
+                parent.as_cdata = True
+                if len(children) == 1:
+                    parent.xml_text = child.Value
+                else:
+                    parent.xml_children.append(child.Value)
+            elif nt == sx.XmlNodeType.Comment:
+                bridge.Comment(data=child.Value, parent=parent)
+            elif nt == sx.XmlNodeType.ProcessingInstruction:
+                bridge.PI(target=child.Target, data=child.Value, parent=parent)
+            elif nt == sx.XmlNodeType.Element:
                 element = bridge.Element(name=unicode(child.LocalName), prefix=child.Prefix,
                                          namespace=unicode(child.NamespaceURI), parent=parent)
 
@@ -117,8 +127,7 @@ class Parser(object):
             doc.LoadXml(source.read())
 
         root = doc.DocumentElement
-        element = bridge.Element(name=root.LocalName, prefix=root.Prefix,
-                                 namespace=root.NamespaceURI)
+        element = bridge.Element(name=root.LocalName, prefix=root.Prefix, namespace=root.NamespaceURI)
 
         element.as_attribute = as_attribute or {}
         element.as_list = as_list or {}
