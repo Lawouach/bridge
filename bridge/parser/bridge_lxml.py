@@ -90,8 +90,8 @@ class Parser(object):
 
     def __qname(self, element):
         if element.xml_ns:
-            return "{%s}%s" % (element.xml_ns, element.xml_name.replace('_', '-'))
-        return element.xml_name.replace('_', '-')
+            return "{%s}%s" % (element.xml_ns, element._local_name)
+        return element._local_name
     
     def __attrs(self, node):
         attrs = {}
@@ -99,9 +99,9 @@ class Parser(object):
             attrns = attr.xml_ns
             if attrns is not None:
                 attrns = attrns.encode(attr.encoding)
-            name = attr.xml_name.replace('_', '-')
+            name = attr._local_name
             if name is not None:
-                name = attr.xml_name.encode(attr.encoding)
+                name = attr._local_name.encode(attr.encoding)
             if attrns:
                 attrs["{%s}%s" % (attrns, name)] = attr.xml_text or ''
             else:
@@ -136,7 +136,7 @@ class Parser(object):
                     nsmap[child.xml_prefix] = child.xml_ns
                 for attr in child.xml_attributes:
                     if attr.xml_prefix:
-                        nsmap[attr.xml_name] = attr.xml_text
+                        nsmap[attr._local_name] = attr.xml_text
                 element = SETX(parent, qname, attrib=attrs, nsmap=nsmap)
 
                 if child.xml_text:

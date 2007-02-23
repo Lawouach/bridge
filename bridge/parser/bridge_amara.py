@@ -33,17 +33,17 @@ class Parser(object):
 
     def __qname(self, name, prefix=None):
         if prefix:
-            return "%s:%s" % (prefix, name.replace('_', '-'))
+            return "%s:%s" % (prefix, name)
         return name
 
     def __serialize_attribute(self, node, attr):
         if attr.xml_prefix and attr.xml_ns:
             node.xml_set_attribute((u'%s:%s' % (attr.xml_prefix,
-                                                attr.xml_name.replace('_', '-')),
+                                                attr._local_name),
                                     attr.xml_ns),
                                    attr.xml_text)
         else:
-            node.xml_set_attribute(attr.xml_name.replace('_', '-'), attr.xml_text)
+            node.xml_set_attribute(attr._local_name, attr.xml_text)
 
     def __serialize_element(self, node, element, encoding):
         for attr in element.xml_attributes:
@@ -63,7 +63,7 @@ class Parser(object):
                 child_node = amara.bindery.comment_base(child.data)
                 node.xml_append(child_node)
             else:
-                child_node = doc.xml_create_element(self.__qname(child.xml_name, prefix=child.xml_prefix),
+                child_node = doc.xml_create_element(self.__qname(child._local_name, prefix=child.xml_prefix),
                                                     ns=child.xml_ns, content=child.xml_text)
                 node.xml_append(child_node)
 

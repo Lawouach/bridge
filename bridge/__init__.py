@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-__version__ = "0.2.5"
+__version__ = "0.2.6"
 __authors__ = ["Sylvain Hellegouarch (sh@defuze.org)"]
 __contributors__ = ['David Turner']
-__date__ = "2007/02/19"
+__date__ = "2007/02/23"
 __copyright__ = """
 Copyright (c) 2006, 2007 Sylvain Hellegouarch
 All rights reserved.
@@ -109,6 +109,7 @@ class Attribute(object):
         
         self.xml_parent = parent
         self.xml_ns = namespace
+        self._local_name = name
         if name:
             name = name.replace('-', '_').replace('.', '_')
         self.xml_name = name
@@ -185,6 +186,7 @@ class Element(object):
         self.xml_parent = parent
         self.xml_prefix = prefix
         self.xml_ns = namespace
+        self._local_name = name
         if name:
             name = name.replace('-', '_').replace('.', '_')
         self.xml_name = name

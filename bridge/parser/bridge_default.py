@@ -127,7 +127,7 @@ class Parser(object):
             if attrns != xd.XMLNS_NAMESPACE:
                 if attrns:
                     attrns = attrns.encode(attr.encoding)
-                name = attr.xml_name.encode(attr.encoding).replace('_', '-')
+                name = attr._local_name.encode(attr.encoding)
                 attrs[(attrns, name, attr.xml_prefix)] = attr.xml_text or ''
             
         return attrs
@@ -148,7 +148,7 @@ class Parser(object):
             if attr.xml_ns == xd.XMLNS_NAMESPACE:
                 if attr.xml_text != node.xml_ns:
                     self.__set_prefix_mapping(visited_ns, parent_visited_ns,
-                                              attr.xml_name, attr.xml_text)
+                                              attr._local_name, attr.xml_text)
                 
     def __serialize_element(self, handler, element, visited_ns=None, set_empty_ns=False, encoding=ENCODING):
         children = element.xml_children
@@ -172,7 +172,7 @@ class Parser(object):
                 if child.xml_ns:
                     ns = child.xml_ns
                 
-                name = child.xml_name.replace('_', '-')
+                name = child._local_name
                 qname = self.__qname(name, prefix=prefix)
 
                 if not child.xml_prefix and not child.xml_ns and not set_empty_ns:

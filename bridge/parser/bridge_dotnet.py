@@ -54,12 +54,12 @@ class Parser(object):
     
     def __qname(self, name, prefix=None):
         if prefix:
-            return "%s:%s" % (prefix, name.replace('_', '-'))
+            return "%s:%s" % (prefix, name)
         return name
 
     def __attrs(self, node, element):
         for attr in element.xml_attributes:
-            name = attr.xml_name.replace('_', '-')
+            name = attr._local_name
             if attr.xml_ns:
                 node.SetAttribute(name, attr.xml_ns, attr.xml_text)
             else:
@@ -67,9 +67,9 @@ class Parser(object):
 
     def __start_element(self, doc, element):
         if element.xml_ns:
-            return doc.CreateElement(element.xml_prefix, element.xml_name, element.xml_ns)
+            return doc.CreateElement(element.xml_prefix, element._local_name, element.xml_ns)
         else:
-            return doc.CreateElement(element.xml_name)
+            return doc.CreateElement(element._local_name)
 
     def __serialize_element(self, root, node, element):
         self.__attrs(node, element)
@@ -89,9 +89,9 @@ class Parser(object):
                 
     def __start_document(self, root):
         if root.xml_ns:
-            return '<%s:%s xmlns:%s="%s" />' % (root.xml_prefix, root.xml_name,
+            return '<%s:%s xmlns:%s="%s" />' % (root.xml_prefix, root._local_name,
                                                 root.xml_prefix, root.xml_ns)
-        return '<%s />' % (root.xml_name, )
+        return '<%s />' % (root._local_name, )
     
     def serialize(self, document, indent=False, encoding=bridge.ENCODING, prefixes=None, omit_declaration=False):
         doc = sx.XmlDocument()
