@@ -17,6 +17,8 @@ from System import Array, Byte, String
 from System.IO import MemoryStream, StreamReader, SeekOrigin
 from System.Text import Encoding
 
+from xml.sax.saxutils import unescape
+
 from bridge.common import XMLNS_NS
 from bridge.filter import remove_duplicate_namespaces_declaration as rdnd
 from bridge.filter import remove_useless_namespaces_decalaration as rund
@@ -39,9 +41,9 @@ class Parser(object):
             elif nt == sx.XmlNodeType.CDATA:
                 parent.as_cdata = True
                 if children.Count == 1:
-                    parent.xml_text = child.Value
+                    parent.xml_text = unescape(child.Value)
                 else:
-                    parent.xml_children.append(child.Value)
+                    parent.xml_children.append(unescape(child.Value))
             elif nt == sx.XmlNodeType.Comment:
                 bridge.Comment(data=child.Value, parent=parent)
             elif nt == sx.XmlNodeType.ProcessingInstruction:
@@ -60,9 +62,9 @@ class Parser(object):
     def __attrs(self, node, element):
         for attr in element.xml_attributes:
             name = attr._local_name
-            if attr.xml_ns:
+            if attr.xml_ns and attr.xml_ns != XMLNS_NS:
                 node.SetAttribute(name, attr.xml_ns, attr.xml_text)
-            else:
+            elif not attr.xml_ns:
                 node.SetAttribute(name, attr.xml_text)
 
     def __start_element(self, doc, element):
@@ -76,21 +78,34 @@ class Parser(object):
         children = element.xml_children
         for child in children:
             if isinstance(child, basestring):
-                node.AppendChild(root.CreateTextNode(child))
+                if element.as_cdata:
+                    node.AppendChild(root.CreateCDataSection(child))
+                else:
+                    node.AppendChild(root.CreateTextNode(child))
+            elif isinstance(child, bridge.Comment):
+                node.AppendChild(root.CreateComment(child.data))
+            elif isinstance(child, bridge.PI):
+                node.AppendChild(root.CreateProcessingInstruction(child.target, child.data))
             elif isinstance(child, bridge.Element):
                 child_node = self.__start_element(root, child)
                 
                 if child.xml_text:
-                    child_node.AppendChild(root.CreateTextNode(child.xml_text))
+                    if child.as_cdata:
+                        child_node.AppendChild(root.CreateCDataSection(child.xml_text))
+                    else:
+                        child_node.AppendChild(root.CreateTextNode(child.xml_text))
                     
                 self.__serialize_element(root, child_node, child)
 
                 node.AppendChild(child_node)
                 
     def __start_document(self, root):
-        if root.xml_ns:
+        if root.xml_ns and root.xml_prefix:
             return '<%s:%s xmlns:%s="%s" />' % (root.xml_prefix, root._local_name,
                                                 root.xml_prefix, root.xml_ns)
+        elif root.xml_ns:
+            return '<%s xmlns="%s" />' % (root._local_name, root.xml_ns)
+        
         return '<%s />' % (root._local_name, )
     
     def serialize(self, document, indent=False, encoding=bridge.ENCODING, prefixes=None, omit_declaration=False):
