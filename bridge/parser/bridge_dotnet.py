@@ -123,7 +123,7 @@ class Parser(object):
                 if os.path.exists(source):
                     doc.Load(source)
             except ValueError:
-                pass
+                doc.LoadXml(source)
             else:
                 doc.LoadXml(source)
         elif hasattr(source, 'read'):
