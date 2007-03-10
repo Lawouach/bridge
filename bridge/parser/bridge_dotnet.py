@@ -119,8 +119,11 @@ class Parser(object):
                     as_attribute_of_element=None):
         doc = sx.XmlDocument()
         if isinstance(source, basestring):
-            if os.path.exists(source):
-                doc.Load(source)
+            try:
+                if os.path.exists(source):
+                    doc.Load(source)
+            except ValueError:
+                pass
             else:
                 doc.LoadXml(source)
         elif hasattr(source, 'read'):
