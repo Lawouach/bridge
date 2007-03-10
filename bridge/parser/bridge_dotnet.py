@@ -38,7 +38,7 @@ class Parser(object):
                     parent.xml_children.append(child.Value)
             elif nt == sx.XmlNodeType.CDATA:
                 parent.as_cdata = True
-                if len(children) == 1:
+                if children.Count == 1:
                     parent.xml_text = child.Value
                 else:
                     parent.xml_children.append(child.Value)
