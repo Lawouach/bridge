@@ -435,7 +435,7 @@ class Element(object):
                 element.xml_ns = dstns
         
         for child in element.xml_children:
-            if not isinstance(child, basestring):
+            if isinstance(child, Element):
                 self.__update_prefixes(child, dst, srcns, dstns, update_attributes)
                 
     def update_prefix(self, dst, srcns, dstns, update_attributes=True):
