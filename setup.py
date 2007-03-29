@@ -10,7 +10,7 @@ for scheme in INSTALL_SCHEMES.values():
     scheme['data'] = scheme['purelib']
         
 setup(name = "bridge",
-      version = '0.2.6',
+      version = '0.2.7',
       description = "General purpose XML library based on other XML engines (Amara, xml.dom, lxml, ElementTree, System.Xml)",
       maintainer = "Sylvain Hellegouarch",
       maintainer_email = "sh@defuze.org",
