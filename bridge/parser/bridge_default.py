@@ -56,7 +56,6 @@ class XMLGeneratorFixed(xss.XMLGenerator):
                 pass
             elif ns == xd.XML_NAMESPACE:
                 name = "xml:%s" % name
-                self.namespaces[name] = xd.XML_NAMESPACE
             elif ns == xd.XMLNS_NAMESPACE:
                 # should have been handled and we do not need to take care of it here
                 continue
