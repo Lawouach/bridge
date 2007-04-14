@@ -11,7 +11,7 @@ import xml.dom.minidom as xdm
 import xml.sax as xs
 import xml.sax.handler as xsh
 import xml.sax.saxutils as xss
-from xml.sax.saxutils import quoteattr
+from xml.sax.saxutils import quoteattr, escape
 
 import bridge
 from bridge import ENCODING
@@ -30,21 +30,22 @@ ns_mapping_rx =  re.compile('\{(.*)\}(.*)')
 # although this hack is far from the one suggested in that ticket
 # see also http://www.xml.com/pub/a/2003/03/12/py-xml.html for a gentl sax introduction
 class XMLGeneratorFixed(xss.XMLGenerator):
+    def initialize(self):
+        self.buffer = []
+        self.namespaces = {}
+        
     def startElementNS(self, name, qname, attrs, visited_ns=None, _set_empty_ns=False):
         element = []
         element.append('<%s' % qname)
         visited_ns = visited_ns or []
-        serialized_ns = []
         for mapping in visited_ns:
             match = ns_mapping_rx.match(mapping)
             uri, prefix = match.groups()
             if uri and prefix:
-                element.append(' xmlns:%s="%s"' % (prefix, uri))
+                self.namespaces[prefix] = uri
             elif uri and not prefix:
-                element.append(' xmlns="%s"' % uri)
-            if uri:
-                serialized_ns.append(uri)
-
+                self.namespaces[None] = uri
+                
         if _set_empty_ns:
             element.append(' xmlns=""')
 
@@ -55,33 +56,44 @@ class XMLGeneratorFixed(xss.XMLGenerator):
                 pass
             elif ns == xd.XML_NAMESPACE:
                 name = "xml:%s" % name
+                self.namespaces[name] = xd.XML_NAMESPACE
             elif ns == xd.XMLNS_NAMESPACE:
                 # should have been handled and we do not need to take care of it here
                 continue
-            elif ns in serialized_ns:
-                name = '%s:%s' % (prefix, name)
             else:
-                name = 'xmlns:%s="%s" %s:%s' % (prefix, ns, prefix, name)
+                name = '%s:%s' % (prefix, name)
+                self.namespaces[prefix] = ns
 
             element.append(' %s=%s' % (name, quoteattr(value)))
 
-            if ns not in serialized_ns:
-                serialized_ns.append(ns)
-                
-        element.append('>')
-        self._write(''.join(element))
+        self.buffer.append(''.join(element))
+        self.buffer.append('>')
 
     def endElementNS(self, name, qname):
-        self._write('</%s>' % qname)
+        self.buffer.append('</%s>' % qname)
 
     def comment(self, content):
-        self._write('<!--%s-->' % content)
+        self.buffer.append('<!--%s-->' % content)
         
     def startCDATA(self):
-        self._write('<![CDATA[')
+        self.buffer.append('<![CDATA[')
 
     def endCDATA(self):
-        self._write(']]>')
+        self.buffer.append(']]>')
+
+    def characters(self, text):
+        self.buffer.append(text)
+
+    def finalize(self):
+        root = [self.buffer[0]]
+        for prefix in self.namespaces:
+            if not prefix:
+                root.append(' xmlns="%s"' % self.namespaces[prefix])
+            else:
+                root.append(' xmlns:%s="%s"' % (prefix, self.namespaces[prefix]))
+
+        self._write(''.join(root))
+        self._write(''.join(self.buffer[1:]))
         
 class Parser(object):
     def __deserialize_fragment(self, current, parent):
@@ -95,16 +107,18 @@ class Parser(object):
         for child in children:
             nt = child.nodeType
             if nt == xd.Node.TEXT_NODE:
+                data = escape(child.data)
                 if len(children) == 1:
-                    parent.xml_text = child.data
+                    parent.xml_text = data
                 else:
-                    parent.xml_children.append(child.data)
+                    parent.xml_children.append(data)
             elif nt == xd.Node.CDATA_SECTION_NODE:
                 parent.as_cdata = True
+                data = escape(child.data)
                 if len(children) == 1:
-                    parent.xml_text = child.data
+                    parent.xml_text = data
                 else:
-                    parent.xml_children.append(child.data)
+                    parent.xml_children.append(data)
             elif nt == xd.Node.COMMENT_NODE:
                 bridge.Comment(data=unicode(child.data), parent=parent)
             elif nt == xd.Node.PROCESSING_INSTRUCTION_NODE:
@@ -210,7 +224,9 @@ class Parser(object):
         if not omit_declaration:
             handler.startDocument()
         visited_ns, set_empty_ns = [], False
+        handler.initialize()
         self.__serialize_element(handler, document, visited_ns, set_empty_ns, encoding)
+        handler.finalize()
         if not omit_declaration:
             handler.endDocument()
 

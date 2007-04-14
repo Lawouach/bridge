@@ -167,3 +167,9 @@ RDF_NS = u'http://www.w3.org/1999/02/22-rdf-syntax-ns#'
 
 RDF_IMDB_PREFIX = u'imdb'
 RDF_IMDB_NS = u'http://www.csd.abdn.ac.uk/~ggrimnes/dev/imdb/IMDB#'
+
+###########################################################
+# LLUP http://dev.llup.org/
+###########################################################
+LLUP_NS = u"http://www.x2x2x.org/llup"
+LLUP_PREFIX = u'llup'
