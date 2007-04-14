@@ -31,8 +31,12 @@ ns_mapping_rx =  re.compile('\{(.*)\}(.*)')
 # see also http://www.xml.com/pub/a/2003/03/12/py-xml.html for a gentl sax introduction
 class XMLGeneratorFixed(xss.XMLGenerator):
     def initialize(self):
+        self.prolog = None
         self.buffer = []
         self.namespaces = {}
+        
+    def startDocument(self):
+        self.prolog = '<?xml version="1.0" encoding="%s"?>' % self.encoding
         
     def startElementNS(self, name, qname, attrs, visited_ns=None, _set_empty_ns=False):
         element = []
@@ -91,6 +95,8 @@ class XMLGeneratorFixed(xss.XMLGenerator):
             else:
                 root.append(' xmlns:%s="%s"' % (prefix, self.namespaces[prefix]))
 
+        if self.prolog:
+            self._write(self.prolog)
         self._write(''.join(root))
         self._write(''.join(self.buffer[1:]))
         
@@ -220,10 +226,10 @@ class Parser(object):
             document = bridge.Document()
             document.xml_children.append(root)
             
+        handler.initialize()
         if not omit_declaration:
             handler.startDocument()
         visited_ns, set_empty_ns = [], False
-        handler.initialize()
         self.__serialize_element(handler, document, visited_ns, set_empty_ns, encoding)
         handler.finalize()
         if not omit_declaration:
