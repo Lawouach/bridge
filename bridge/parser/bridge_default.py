@@ -36,7 +36,7 @@ class XMLGeneratorFixed(xss.XMLGenerator):
         self.namespaces = {}
         
     def startDocument(self):
-        self.prolog = '<?xml version="1.0" encoding="%s"?>' % self.encoding
+        self.prolog = '<?xml version="1.0" encoding="%s"?>' % self._encoding
         
     def startElementNS(self, name, qname, attrs, visited_ns=None, _set_empty_ns=False):
         element = []
