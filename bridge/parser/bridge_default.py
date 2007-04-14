@@ -59,9 +59,8 @@ class XMLGeneratorFixed(xss.XMLGenerator):
             if ns is None:
                 pass
             elif ns == xd.XML_NAMESPACE:
-                name = "xml:%s" % name
+                continue
             elif ns == xd.XMLNS_NAMESPACE:
-                # should have been handled and we do not need to take care of it here
                 continue
             else:
                 name = '%s:%s' % (prefix, name)
