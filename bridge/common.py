@@ -125,6 +125,10 @@ XMPP_TLS_NS = u'urn:ietf:params:xml:ns:xmpp-tls'
 XMPP_TLS_PREFIX = u'starttls'
 
 # see http://www.xmpp.org/rfcs/rfc3920.html
+XMPP_STANZA_ERROR_NS = u'urn:ietf:params:xml:ns:xmpp-stanzas'
+XMPP_STANZA_ERROR_PREFIX = None
+
+# see http://www.xmpp.org/rfcs/rfc3920.html
 XMPP_BIND_NS = u'urn:ietf:params:xml:ns:xmpp-bind'
 XMPP_BIND_PREFIX = u'bind'
 
@@ -144,6 +148,44 @@ XMPP_DISCO_INFO_PREFIX = u'info'
 
 XMPP_ROSTER_NS = u'jabber:iq:roster'
 XMPP_ROSTER_PREIX = u'roster'
+
+# see http://www.xmpp.org/extensions/xep-0071.html
+XMPP_XHTML_IM_NS = u'http://jabber.org/protocol/xhtml-im'
+XMPP_XHTML_IM_PREFIX = None
+
+# see http://www.xmpp.org/extensions/xep-0022.html
+XMPP_EVENT_NS = u'jabber:x:event'
+XMPP_EVENT_PREFIX = None
+
+# see http://www.xmpp.org/extensions/xep-0012.html
+XMPP_LAST_NS = u'jabber:iq:last'
+XMPP_LAST_PREFIX = None
+
+# see http://www.xmpp.org/extensions/xep-0095.html
+XMPP_SI_NS = u'http://jabber.org/protocol/si'
+XMPP_SI_PREFIX = None
+
+# see http://www.xmpp.org/extensions/xep-0096.html
+XMPP_SI_FILE_TRANSFER_NS = u'http://jabber.org/protocol/si/profile/file-transfer'
+XMPP_SI_FILE_TRANSFER_PREFIX = None
+
+# see http://www.xmpp.org/extensions/xep-0020.html
+XMPP_FEATURE_NEG_NS = u'http://jabber.org/protocol/feature-neg'
+XMPP_FEATURE_NEG_PREFIX = None
+
+# see http://www.xmpp.org/extensions/xep-0066.html
+XMPP_OOB_NS = u'jabber:iq:oob'
+XMPP_OOB_PPREFIX = None
+XMPP_XOOB_NS = u'jabber:x:oob'
+XMPP_XOOB_PPREFIX = None
+
+# see http://www.xmpp.org/extensions/xep-0065.html
+XMPP_BYTESTREAMS_NS = u'http://jabber.org/protocol/bytestreams'
+XMPP_BYTESTREAMS_PREFIX = None
+
+# see http://www.xmpp.org/extensions/xep-0092.html
+XMPP_VERSION_NS = u'jabber:iq:version'
+XMPP_VERSION_PREFIX = None
 
 xmpp_as_attr = {}
 xmpp_as_attr.update(xmpp_client_as_attr)

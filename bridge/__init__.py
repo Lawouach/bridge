@@ -382,6 +382,19 @@ class Element(object):
         """
         self.xml_children.insert(self.xml_children.index(after_element) + 1, element)
 
+    def collapse(self, separator='\n'):
+        """
+        Collapses all content of this element and its entire subtree.
+        """
+        text = [self.xml_text or '']
+        for child in self.xml_children:
+            if isinstance(child, unicode) or isinstance(child, str):
+                text.append(child)
+            elif isinstance(child, Element):
+                text.append(self.collapse(child, separator))
+
+        return separator.join(text)
+
     def xml(self, indent=True, encoding=ENCODING, prefixes=None, omit_declaration=False):
         """
         Serializes as a string this element

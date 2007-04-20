@@ -26,79 +26,6 @@ except ImportError:
 xml_declaration_rx = re.compile(r"^<\?xml.+?\?>")
 ns_mapping_rx =  re.compile('\{(.*)\}(.*)')
 
-# see http://sourceforge.net/tracker/index.php?func=detail&aid=847665&group_id=5470&atid=105470
-# although this hack is far from the one suggested in that ticket
-# see also http://www.xml.com/pub/a/2003/03/12/py-xml.html for a gentl sax introduction
-class XMLGeneratorFixed(xss.XMLGenerator):
-    def initialize(self):
-        self.prolog = None
-        self.buffer = []
-        self.namespaces = {}
-        
-    def startDocument(self):
-        self.prolog = '<?xml version="1.0" encoding="%s"?>' % self._encoding
-        
-    def startElementNS(self, name, qname, attrs, visited_ns=None, _set_empty_ns=False):
-        element = []
-        element.append('<%s' % qname)
-        visited_ns = visited_ns or []
-        for mapping in visited_ns:
-            match = ns_mapping_rx.match(mapping)
-            uri, prefix = match.groups()
-            if uri and prefix:
-                self.namespaces[prefix] = uri
-            elif uri and not prefix:
-                self.namespaces[None] = uri
-                
-        if _set_empty_ns:
-            element.append(' xmlns=""')
-
-        self._undeclared_ns_maps = []
-
-        for ((ns, name, prefix), value) in attrs.items():
-            if ns is None:
-                pass
-            elif ns == xd.XML_NAMESPACE:
-                name = 'xml:%s' % name
-            elif ns == xd.XMLNS_NAMESPACE:
-                continue
-            else:
-                name = '%s:%s' % (prefix, name)
-                self.namespaces[prefix] = ns
-
-            element.append(' %s=%s' % (name, quoteattr(value)))
-
-        self.buffer.append(''.join(element))
-        self.buffer.append('>')
-
-    def endElementNS(self, name, qname):
-        self.buffer.append('</%s>' % qname)
-
-    def comment(self, content):
-        self.buffer.append('<!--%s-->' % content)
-        
-    def startCDATA(self):
-        self.buffer.append('<![CDATA[')
-
-    def endCDATA(self):
-        self.buffer.append(']]>')
-
-    def characters(self, text):
-        self.buffer.append(text)
-
-    def finalize(self):
-        root = [self.buffer[0]]
-        for prefix in self.namespaces:
-            if not prefix:
-                root.append(' xmlns="%s"' % self.namespaces[prefix])
-            else:
-                root.append(' xmlns:%s="%s"' % (prefix, self.namespaces[prefix]))
-
-        if self.prolog:
-            self._write(self.prolog)
-        self._write(''.join(root))
-        self._write(''.join(self.buffer[1:]))
-        
 class Parser(object):
     def __deserialize_fragment(self, current, parent):
         if current.attributes:
@@ -158,85 +85,88 @@ class Parser(object):
             mapping = '{%s}' % (ns, )
 
         if mapping:
-            if mapping not in parent_visited_ns:
-                visited_ns.append(mapping)
+            if mapping not in visited_ns:
+                if mapping not in parent_visited_ns:
+                    visited_ns.append(mapping)
 
-    def __set_visited_ns_from_attributes(self, visited_ns, parent_visited_ns, node):
-        for attr in node.xml_attributes:
-            if attr.xml_ns == xd.XMLNS_NAMESPACE:
-                if attr.xml_text != node.xml_ns:
-                    self.__set_prefix_mapping(visited_ns, parent_visited_ns,
-                                              attr._local_name, attr.xml_text)
-                
-    def __serialize_element(self, handler, element, visited_ns=None, set_empty_ns=False, encoding=ENCODING):
+    def __serialize_element(self, element, buf, visited_ns=None, encoding=ENCODING):
         children = element.xml_children
         for child in children:
             _visited_ns = []
-            _set_empty_ns = False
             if isinstance(child, basestring):
                 if element.as_cdata:
-                    handler.startCDATA()
-                handler.characters(child)
+                    buf.append('<![CDATA[')
+                buf.append(child)
                 if element.as_cdata:
-                    handler.endCDATA()
+                    buf.append(']]>')
             elif isinstance(child, bridge.Comment):
-                handler.comment(child.data)
+                buf.append('<!--%s-->' % child.data)
             elif isinstance(child, bridge.PI):
-                handler.processingInstruction(child.target, child.data)
+                buf.append('<?%s %s?>' % (child.target, child.data))
             elif isinstance(child, bridge.Element):
                 prefix = ns = name = None
                 if child.xml_prefix:
                     prefix = child.xml_prefix
                 if child.xml_ns:
                     ns = child.xml_ns
+                self.__set_prefix_mapping(_visited_ns, visited_ns, prefix, ns)
                 
                 name = child._local_name
                 qname = self.__qname(name, prefix=prefix)
-
-                if not child.xml_prefix and not child.xml_ns and not set_empty_ns:
-                    _set_empty_ns = True
-
+                elmt = ['<%s' % qname]
                 attrs = self.__attrs(child)
-
-                self.__set_prefix_mapping(_visited_ns, visited_ns, prefix, ns)
-                self.__set_visited_ns_from_attributes(_visited_ns, visited_ns, child)
-                handler.startElementNS((ns, name), qname, attrs, _visited_ns, _set_empty_ns)
-            
-                if child.xml_text:
-                    handler.characters(child.xml_text)
-
-                for _ in visited_ns:
-                    if _ not in _visited_ns:
-                        _visited_ns.append(_)
-                self.__serialize_element(handler, child, _visited_ns, _set_empty_ns, encoding)
                 
-                handler.endElementNS((ns, name), qname)
-                
+                for ((ns, name, prefix), value) in attrs.items():
+                    if ns is None:
+                        pass
+                    elif ns == xd.XML_NAMESPACE:
+                        name = 'xml:%s' % name
+                    elif ns == xd.XMLNS_NAMESPACE:
+                        _visited_ns[name] = value
+                        self.__set_prefix_mapping(_visited_ns, visited_ns, name, value)
+                    else:
+                        name = '%s:%s' % (prefix, name)
+                        self.__set_prefix_mapping(_visited_ns, visited_ns, prefix, ns)
+                        
+                    elmt.append(' %s=%s' % (name, quoteattr(value)))
 
+                for token in _visited_ns:
+                    match = ns_mapping_rx.match(token)
+                    uri, prefix = match.groups()
+                    if prefix:
+                        elmt.append(' xmlns:%s="%s"' % (prefix, uri))
+                    else:
+                        elmt.append(' xmlns="%s"' % (uri, ))
+                        
+                if child.xml_text or child.xml_children:
+                    elmt.append('>')
+                
+                    if child.xml_text:
+                        elmt.append(child.xml_text)
+
+                    _visited_ns.extend(visited_ns)
+                    buf.extend(elmt)
+                    self.__serialize_element(child, buf, _visited_ns, encoding)
+                    buf.extend('</%s>' % qname)
+                else:
+                    elmt.append(' />')
+                    buf.extend(elmt)
+              
     def serialize(self, document, indent=False, encoding=bridge.ENCODING, prefixes=None, omit_declaration=False):
-        parser = xs.make_parser()
-        parser.setFeature(xs.handler.feature_namespaces, True)
-        s = StringIO.StringIO()
-        handler = XMLGeneratorFixed(s, encoding=encoding)
-        parser.setContentHandler(handler)
 
         if not isinstance(document, bridge.Document):
             root = document
             document = bridge.Document()
             document.xml_children.append(root)
-            
-        handler.initialize()
-        if not omit_declaration:
-            handler.startDocument()
-        visited_ns, set_empty_ns = [], False
-        self.__serialize_element(handler, document, visited_ns, set_empty_ns, encoding)
-        handler.finalize()
-        if not omit_declaration:
-            handler.endDocument()
 
-        content = s.getvalue()
-        s.close()
-        return content
+        buf = []
+        if not omit_declaration:
+            buf.append('<?xml version="1.0" encoding="%s"?>' % encoding)
+        visited_ns = []
+        self.__serialize_element(document, buf, visited_ns, encoding)
+
+        content = ''.join(buf)
+        return content.encode(encoding)
 
     def deserialize(self, source, prefixes=None, strict=False, as_attribute=None, as_list=None,
                     as_attribute_of_element=None):
