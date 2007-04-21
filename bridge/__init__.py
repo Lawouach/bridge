@@ -395,6 +395,17 @@ class Element(object):
 
         return separator.join(text)
 
+    def is_mixed_content(self):
+        """
+        Returns True if the direct children of this element makes are
+        in mixed content.
+        """
+        for child in self.xml_children:
+            if isinstance(child, unicode) or isinstance(child, str):
+                return True
+
+        return False
+
     def xml(self, indent=True, encoding=ENCODING, prefixes=None, omit_declaration=False):
         """
         Serializes as a string this element

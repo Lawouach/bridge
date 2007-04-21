@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import os
 import os.path
 import re
 
@@ -77,7 +78,7 @@ class Parser(object):
             
         return attrs
 
-    def __set_prefix_mapping(self, visited_ns, parent_visited_ns, prefix, ns):
+    def __set_prefix_mapping(self, visited_ns, prefix, ns):
         mapping = None
         if prefix and ns:
             mapping = '{%s}%s' % (ns, prefix)
@@ -86,34 +87,46 @@ class Parser(object):
 
         if mapping:
             if mapping not in visited_ns:
-                if mapping not in parent_visited_ns:
-                    visited_ns.append(mapping)
+                visited_ns.append(mapping)
 
-    def __serialize_element(self, element, buf, visited_ns=None, encoding=ENCODING):
+    def __serialize_element(self, element, buf, indent=0, end_of_line='', root_elt_index=None,
+                            visited_ns=None, encoding=ENCODING):
         children = element.xml_children
+        mixed_content_mode = False
         for child in children:
-            _visited_ns = []
             if isinstance(child, basestring):
+                child = child.strip()
+                child = child.strip('\n')
+                child = child.strip('\r\n')
+                if not child:
+                    continue
+                if buf[-1] == end_of_line: buf[-1] = ''
+                mixed_content_mode = True
                 if element.as_cdata:
                     buf.append('<![CDATA[')
                 buf.append(child)
                 if element.as_cdata:
                     buf.append(']]>')
             elif isinstance(child, bridge.Comment):
-                buf.append('<!--%s-->' % child.data)
+                buf.append('<!--%s-->%s' % (child.data, end_of_line))
             elif isinstance(child, bridge.PI):
-                buf.append('<?%s %s?>' % (child.target, child.data))
+                buf.append('<?%s %s?>%s' % (child.target, child.data, end_of_line))
             elif isinstance(child, bridge.Element):
                 prefix = ns = name = None
                 if child.xml_prefix:
                     prefix = child.xml_prefix
                 if child.xml_ns:
                     ns = child.xml_ns
-                self.__set_prefix_mapping(_visited_ns, visited_ns, prefix, ns)
+                self.__set_prefix_mapping(visited_ns, prefix, ns)
                 
                 name = child._local_name
                 qname = self.__qname(name, prefix=prefix)
-                elmt = ['<%s' % qname]
+                if not mixed_content_mode:
+                    buf.append('%s<%s' % (' ' * indent, qname))
+                else:
+                    buf.append('<%s' % qname)
+                if root_elt_index is not None:
+                    root_elt_index.append(len(buf))
                 attrs = self.__attrs(child)
                 
                 for ((ns, name, prefix), value) in attrs.items():
@@ -122,36 +135,37 @@ class Parser(object):
                     elif ns == xd.XML_NAMESPACE:
                         name = 'xml:%s' % name
                     elif ns == xd.XMLNS_NAMESPACE:
-                        _visited_ns[name] = value
-                        self.__set_prefix_mapping(_visited_ns, visited_ns, name, value)
+                        self.__set_prefix_mapping(visited_ns, name, value)
                     else:
                         name = '%s:%s' % (prefix, name)
-                        self.__set_prefix_mapping(_visited_ns, visited_ns, prefix, ns)
+                        self.__set_prefix_mapping(visited_ns, prefix, ns)
                         
-                    elmt.append(' %s=%s' % (name, quoteattr(value)))
+                    buf.append(' %s=%s' % (name, quoteattr(value)))
 
-                for token in _visited_ns:
-                    match = ns_mapping_rx.match(token)
-                    uri, prefix = match.groups()
-                    if prefix:
-                        elmt.append(' xmlns:%s="%s"' % (prefix, uri))
-                    else:
-                        elmt.append(' xmlns="%s"' % (uri, ))
-                        
                 if child.xml_text or child.xml_children:
-                    elmt.append('>')
+                    buf.append('>')
                 
                     if child.xml_text:
-                        elmt.append(child.xml_text)
+                        buf.append(child.xml_text)
 
-                    _visited_ns.extend(visited_ns)
-                    buf.extend(elmt)
-                    self.__serialize_element(child, buf, _visited_ns, encoding)
-                    buf.extend('</%s>' % qname)
+                    if child.xml_children:
+                        buf.append(end_of_line)
+                        self.__serialize_element(child, buf, indent * 2, end_of_line,
+                                                 visited_ns=visited_ns, encoding=encoding)
+                        if (root_elt_index is not None) or element.is_mixed_content():
+                            buf.extend('</%s>%s' % (qname, end_of_line))
+                        else:
+                            buf.extend('%s</%s>%s' % (' ' * indent, qname, end_of_line))
+                    elif mixed_content_mode:
+                        buf.extend('</%s>' % (qname, ))
+                    else:
+                        buf.extend('</%s>%s' % (qname, end_of_line))
+                elif mixed_content_mode:
+                    buf.append(' />')
                 else:
-                    elmt.append(' />')
-                    buf.extend(elmt)
+                    buf.append(' />%s' % end_of_line)
               
+                    
     def serialize(self, document, indent=False, encoding=bridge.ENCODING, prefixes=None, omit_declaration=False):
 
         if not isinstance(document, bridge.Document):
@@ -160,13 +174,31 @@ class Parser(object):
             document.xml_children.append(root)
 
         buf = []
-        if not omit_declaration:
-            buf.append('<?xml version="1.0" encoding="%s"?>' % encoding)
         visited_ns = []
-        self.__serialize_element(document, buf, visited_ns, encoding)
+        root_elt_index = []
+        end_of_line = ''
+        if indent: end_of_line = os.linesep 
+        if indent: indent = 2
+        else: indent = 0
+        self.__serialize_element(document, buf, indent, end_of_line,
+                                 root_elt_index, visited_ns, encoding)
 
+        root_elt_index = root_elt_index[0] - 1
+        root_elt = [buf[root_elt_index]]
+        for token in visited_ns:
+            match = ns_mapping_rx.match(token)
+            uri, prefix = match.groups()
+            if prefix:
+                root_elt.append(' xmlns:%s="%s"' % (prefix, uri))
+            else:
+                root_elt.append(' xmlns="%s"' % (uri, ))
+
+        buf[root_elt_index] = ''.join(root_elt).strip()
+        if not omit_declaration:
+            buf.insert(0, '<?xml version="1.0" encoding="%s"?>%s' % (encoding, end_of_line))
+            
         content = ''.join(buf)
-        return content.encode(encoding)
+        return content.rstrip(end_of_line).encode(encoding)
 
     def deserialize(self, source, prefixes=None, strict=False, as_attribute=None, as_list=None,
                     as_attribute_of_element=None):
