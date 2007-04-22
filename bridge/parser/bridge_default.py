@@ -89,8 +89,67 @@ class Parser(object):
             if mapping not in visited_ns:
                 visited_ns.append(mapping)
 
-    def __serialize_element(self, element, buf, indent=0, end_of_line='', root_elt_index=None,
+    def __serialize_element(self, element, buf, root_elt_index=None,
                             visited_ns=None, encoding=ENCODING):
+        children = element.xml_children
+        for child in children:
+            if isinstance(child, basestring):
+                child = child.strip()
+                child = child.strip('\n')
+                child = child.strip('\r\n')
+                if not child:
+                    continue
+                if element.as_cdata:
+                    buf.append('<![CDATA[')
+                buf.append(child)
+                if element.as_cdata:
+                    buf.append(']]>')
+            elif isinstance(child, bridge.Comment):
+                buf.append('<!--%s-->' % (child.data,))
+            elif isinstance(child, bridge.PI):
+                buf.append('<?%s %s?>' % (child.target, child.data))
+            elif isinstance(child, bridge.Element):
+                prefix = ns = name = None
+                if child.xml_prefix:
+                    prefix = child.xml_prefix
+                if child.xml_ns:
+                    ns = child.xml_ns
+                self.__set_prefix_mapping(visited_ns, prefix, ns)
+                
+                name = child._local_name
+                qname = self.__qname(name, prefix=prefix)
+                buf.append('<%s' % qname)
+                if root_elt_index is not None:
+                    root_elt_index.append(len(buf))
+                attrs = self.__attrs(child)
+                
+                for ((ns, name, prefix), value) in attrs.items():
+                    if ns is None:
+                        pass
+                    elif ns == xd.XML_NAMESPACE:
+                        name = 'xml:%s' % name
+                    elif ns == xd.XMLNS_NAMESPACE:
+                        self.__set_prefix_mapping(visited_ns, name, value)
+                    else:
+                        name = '%s:%s' % (prefix, name)
+                        self.__set_prefix_mapping(visited_ns, prefix, ns)
+                        
+                    buf.append(' %s=%s' % (name, quoteattr(value)))
+
+                if child.xml_text or child.xml_children:
+                    buf.append('>')
+                
+                    if child.xml_text:
+                        buf.append(child.xml_text)
+
+                    if child.xml_children:
+                        self.__serialize_element(child, buf, visited_ns=visited_ns, encoding=encoding)
+                    buf.extend('</%s>' % (qname, ))
+                else:
+                    buf.append(' />')
+              
+    def __serialize_element_with_indent(self, element, buf, indent=0, end_of_line='', root_elt_index=None,
+                                        visited_ns=None, encoding=ENCODING):
         children = element.xml_children
         mixed_content_mode = False
         for child in children:
@@ -150,8 +209,8 @@ class Parser(object):
 
                     if child.xml_children:
                         buf.append(end_of_line)
-                        self.__serialize_element(child, buf, indent * 2, end_of_line,
-                                                 visited_ns=visited_ns, encoding=encoding)
+                        self.__serialize_element_with_indent(child, buf, indent * 2, end_of_line,
+                                                             visited_ns=visited_ns, encoding=encoding)
                         if (root_elt_index is not None) or element.is_mixed_content():
                             buf.extend('</%s>%s' % (qname, end_of_line))
                         else:
@@ -177,11 +236,14 @@ class Parser(object):
         visited_ns = []
         root_elt_index = []
         end_of_line = ''
-        if indent: end_of_line = os.linesep 
-        if indent: indent = 2
-        else: indent = 0
-        self.__serialize_element(document, buf, indent, end_of_line,
-                                 root_elt_index, visited_ns, encoding)
+        if indent:
+            end_of_line = os.linesep 
+            indent = 2
+            self.__serialize_element_with_indent(document, buf, indent, end_of_line,
+                                                 root_elt_index, visited_ns, encoding)
+        else:
+            self.__serialize_element(document, buf, root_elt_index, visited_ns, encoding)
+        
 
         root_elt_index = root_elt_index[0] - 1
         root_elt = [buf[root_elt_index]]
