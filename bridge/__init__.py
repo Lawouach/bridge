@@ -143,7 +143,7 @@ class Attribute(object):
     
     def __repr__(self):
         value = self.xml_text or ''
-        return '%s="%s" attribute at %s' % (self.xml_name, value, hex(id(self)))
+        return '{%s}%s="%s" attribute at %s' % (self.xml_ns or '', self.xml_name, value, hex(id(self)))
   
 class Element(object):
     """
