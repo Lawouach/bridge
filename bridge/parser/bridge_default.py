@@ -3,7 +3,6 @@
 
 import os
 import os.path
-import re
 
 __all__ = ['Parser']
 
@@ -16,16 +15,6 @@ from xml.sax.saxutils import quoteattr, escape, unescape
 
 import bridge
 from bridge import ENCODING
-from bridge.filter import remove_duplicate_namespaces_declaration as rdnd
-from bridge.filter import remove_useless_namespaces_decalaration as rund
-
-try:
-    import cStringIO as StringIO
-except ImportError:
-    import StringIO
-
-xml_declaration_rx = re.compile(r"^<\?xml.+?\?>")
-ns_mapping_rx =  re.compile('\{(.*)\}(.*)')
 
 class Parser(object):
     def __init__(self):
@@ -72,14 +61,12 @@ class Parser(object):
     def __attrs(self, node):
         attrs = {}
         for attr in node.xml_attributes:
-            attrns = attr.xml_ns
+            ns = attr.xml_ns
             prefix = attr.xml_prefix
-            if attrns:
-                attrns = attrns.encode(attr.encoding)
-            name = attr._local_name.encode(attr.encoding)
-            if attrns == xd.XMLNS_NAMESPACE and name == 'xmlns':
+            name = attr.xml_name
+            if ns == xd.XMLNS_NAMESPACE and name == 'xmlns':
                 continue
-            attrs[(attrns, name, prefix)] = attr.xml_text or ''
+            attrs[(ns, name, prefix)] = attr.xml_text or ''
 
         return attrs
 
@@ -138,10 +125,11 @@ class Parser(object):
         
                 name = child._local_name
                 qname = self.__qname(name, prefix=prefix)
+                
                 self.buffer.append('<%s' % qname)
                 if not self.__is_known(ns_map, prefix, ns):
                     self.__append_namespace(prefix, ns)
-                    
+
                 attrs = self.__attrs(child)
                 
                 for ((ns, name, prefix), value) in attrs.items():
@@ -190,6 +178,7 @@ class Parser(object):
             self.buffer.insert(0, '<?xml version="1.0" encoding="%s"?>%s' % (encoding, end_of_line))
             
         content = ''.join(self.buffer)
+        self.buffer = []
         return content.rstrip(end_of_line).encode(encoding)
 
     def deserialize(self, source, prefixes=None, strict=False, as_attribute=None, as_list=None,
