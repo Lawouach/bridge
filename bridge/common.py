@@ -103,6 +103,15 @@ XMPP_DATA_FORM_PREFIX = u'xdata'
 XMPP_PUBSUB_NS = u'http://jabber.org/protocol/pubsub'
 XMPP_PUBSUB_PREFIX = u'pubsub'
 
+XMPP_PUBSUB_OWNER_NS = u'http://jabber.org/protocol/pubsub#owner'
+XMPP_PUBSUB_OWNER_PREFIX = u'pubsub'
+
+XMPP_PUBSUB_NODE_CONFIG_NS = u'http://jabber.org/protocol/pubsub#node_config'
+XMPP_PUBSUB_NODE_CONFIG_PREFIX = u'pubsub'
+
+XMPP_PUBSUB_EVENT_NS = u'http://jabber.org/protocol/pubsub#event'
+XMPP_PUBSUB_EVENT_PREFIX = u'pubsub'
+
 xmpp_pubsub_as_attr = {XMPP_PUBSUB_NS: ['pubsub', 'create']}
 xmpp_pubsub_as_list = {XMPP_PUBSUB_NS: ['configure', 'subscribe', 'options', 'affiliations',
                                         'items', 'publish', 'retract', 'subscription',
@@ -187,6 +196,10 @@ XMPP_BYTESTREAMS_PREFIX = None
 XMPP_VERSION_NS = u'jabber:iq:version'
 XMPP_VERSION_PREFIX = None
 
+# see http://www.xmpp.org/extensions/xep-0054.html
+XMPP_VCARD_NS = u'vcard-temp'
+XMPP_VCARD_PREFIX = u'vcard'
+
 xmpp_as_attr = {}
 xmpp_as_attr.update(xmpp_client_as_attr)
 xmpp_as_attr.update(xmpp_pubsub_as_attr)
@@ -215,3 +228,4 @@ RDF_IMDB_NS = u'http://www.csd.abdn.ac.uk/~ggrimnes/dev/imdb/IMDB#'
 ###########################################################
 LLUP_NS = u"http://www.x2x2x.org/llup"
 LLUP_PREFIX = u'llup'
+
