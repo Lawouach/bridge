@@ -236,7 +236,7 @@ class BridgeBufferedParser(object):
             if pos >= 0:
                 start_at = pos + 5
                 pos = tag.find('=', start_at)
-                uses_single_quote = tag[pos+2] == "'"
+                uses_single_quote = tag[pos+1] == "'"
                 prefix = ns = None
                 if tag[start_at] == ':': 
                     prefix = tag[start_at+1:pos]
