@@ -235,13 +235,15 @@ class BridgeBufferedParser(object):
             pos = tag.find('xmlns')
             if pos >= 0:
                 start_at = pos + 5
-                pos = tag.find('="', start_at)
+                pos = tag.find('=', start_at)
                 prefix = ns = None
                 if tag[start_at] == ':': 
                     prefix = tag[start_at+1:pos]
                 if pos >= 0:
                     start_at = pos + 2
                     end_at = tag.find('"', start_at)
+                    if end_at == -1:
+                        end_at = tag.find("'", start_at)
                     ns = tag[start_at:end_at]
                 self.fragment.ns[prefix] = ns
                 tag = tag[end_at+2:]
