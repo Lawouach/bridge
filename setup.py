@@ -1,5 +1,5 @@
 """
-General purpose XML library based on other XML engines (Amara, xml.dom, lxml, System.Xml)
+General purpose XML library for CPython and IronPython"
 """
 
 #from distutils.core import setup
@@ -10,8 +10,8 @@ for scheme in INSTALL_SCHEMES.values():
     scheme['data'] = scheme['purelib']
         
 setup(name = "bridge",
-      version = '0.2.8',
-      description = "General purpose XML library based on other XML engines (Amara, xml.dom, lxml, ElementTree, System.Xml)",
+      version = '0.3.0',
+      description = "General purpose XML library for CPython and IronPython",
       maintainer = "Sylvain Hellegouarch",
       maintainer_email = "sh@defuze.org",
       url = "http://trac.defuze.org/wiki/bridge",

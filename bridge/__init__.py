@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-__version__ = "0.2.8"
+__version__ = "0.3.0"
 __authors__ = ["Sylvain Hellegouarch (sh@defuze.org)"]
 __contributors__ = ['David Turner']
-__date__ = "2007/05/10"
+__date__ = "2007/05/22"
 __copyright__ = """
 Copyright (c) 2006, 2007 Sylvain Hellegouarch
 All rights reserved.
@@ -37,37 +37,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ENCODING = 'UTF-8'
 DUMMY_URI = u'http://dummy.com'
 
-import bridge.parser.bridge_default
 from bridge.filter import fetch_child, fetch_children
-
 from bridge.common import  XML_NS, XMLNS_NS 
 
-__all__ = ['Attribute', 'Element', 'PI', 'Comment', 'Document', 'set_bridge_parser']
+__all__ = ['Attribute', 'Element', 'PI', 'Comment', 'Document']
 
-def set_bridge_parser(parser_name='default'):
-    """
-    Loads and sets the given parser.
-    """
-    if parser_name == 'default':
-        from bridge.parser.bridge_default import Parser
-        Element.parser = Parser 
-    elif parser_name == 'expat':
-        from bridge.parser.bridge_expat import Parser
-        Element.parser = Parser
-    elif parser_name == 'amara':
-        from bridge.parser.bridge_amara import Parser
-        Element.parser = Parser
-    elif parser_name == 'lxml':
-        from bridge.parser.bridge_lxml import Parser
-        Element.parser = Parser
-    elif parser_name == 'elementtree':
-        from bridge.parser.bridge_elementtree import Parser
-        Element.parser = Parser    
-    elif parser_name == 'dotnet':
-        from bridge.parser.bridge_dotnet import Parser
-        Element.parser = Parser
-
- 
 class PI(object):
     def __init__(self, target, data, parent=None):
         self.target = target
@@ -150,7 +124,7 @@ class Element(object):
     Maps an XML element to a Python object.
     """
 
-    parser = bridge.parser.bridge_default.Parser
+    parser = None
     encoding = ENCODING
     as_list = None
     as_attribute = None
@@ -406,7 +380,7 @@ class Element(object):
 
         return False
 
-    def xml(self, indent=True, encoding=ENCODING, prefixes=None, omit_declaration=False):
+    def xml(self, indent=True, encoding=ENCODING, prefixes=None, omit_declaration=False, parser=None):
         """
         Serializes as a string this element
 
@@ -415,13 +389,21 @@ class Element(object):
         encoding -- encoding to use during the serialization process
         prefixes -- dictionnary of prefixes of the form {'prefix': 'ns'}
         omit_declaration -- prevent the result to start with the XML declaration
+        parser -- instance of an existing parser, if not provided the default one will be used
         """
-        ser = self.parser()
-        return ser.serialize(self, indent=indent, encoding=encoding,
-                             prefixes=prefixes, omit_declaration=omit_declaration)
+        if not parser and self.parser:
+            parser = self.parser()
+        elif not self.parser:
+            from bridge.parser import get_first_available_parser
+            parser = get_first_available_parser()
+            self.parser = parser
+            parser = parser()
+
+        return parser.serialize(self, indent=indent, encoding=encoding,
+                                prefixes=prefixes, omit_declaration=omit_declaration)
 
     def load(self, source, prefixes=None, as_attribute=None, as_list=None,
-             as_attribute_of_element=None):
+             as_attribute_of_element=None, parser=None):
         """
         Load source into an Element instance
 
@@ -435,10 +417,16 @@ class Element(object):
 
         If any of those last three parameters are provided they will take
         precedence over those set on the Element and Attribute class.
-        
         """
-        ser = self.parser()
-        return ser.deserialize(source, prefixes=prefixes, as_attribute=as_attribute,
+        if not parser and self.parser:
+            parser = self.parser()
+        elif not self.parser:
+            from bridge.parser import get_first_available_parser
+            parser = get_first_available_parser()
+            self.parser = parser
+            parser = parser()
+
+        return parser.deserialize(source, prefixes=prefixes, as_attribute=as_attribute,
                                as_list=as_list, as_attribute_of_element=as_attribute_of_element)
     load = classmethod(load)
 
