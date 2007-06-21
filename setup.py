@@ -2,9 +2,9 @@
 General purpose XML library for CPython and IronPython"
 """
 
-from distutils.core import setup
+#from distutils.core import setup
 from distutils.command.install import INSTALL_SCHEMES
-#from setuptools import setup
+from setuptools import setup
  
 for scheme in INSTALL_SCHEMES.values():
     scheme['data'] = scheme['purelib']
