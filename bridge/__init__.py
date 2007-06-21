@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-__version__ = "0.3.0"
+__version__ = "0.3.1"
 __authors__ = ["Sylvain Hellegouarch (sh@defuze.org)"]
 __contributors__ = ['David Turner']
-__date__ = "2007/05/22"
+__date__ = "2007/06/21"
 __copyright__ = """
 Copyright (c) 2006, 2007 Sylvain Hellegouarch
 All rights reserved.
@@ -79,7 +79,7 @@ class Attribute(object):
         parent -- element which this attribute belongs to
         """
         if value and not isinstance(value, unicode):
-            raise TypeError, "Attribute's value must be an unicode object or None"
+            raise TypeError, "Attribute's (%s) value must be an unicode object or None. Got %s instead." % (name, str(type(value)))
         
         self.xml_parent = parent
         self.xml_ns = namespace
@@ -150,7 +150,7 @@ class Element(object):
         then we will add an attribute to parent with the name of the element
         """
         if content and not isinstance(content, unicode):
-            raise TypeError, "Element's content must be an unicode object or None"
+            raise TypeError, "Element's content (%s) must be an unicode object or None. Got %s instead." % (name, str(type(content)))
 
         self.as_attribute = {}
         self.as_list= {}

@@ -24,7 +24,7 @@ import bridge
 from bridge import Element as E
 from bridge import Attribute as A
 from bridge import Document, Comment, PI, Element
-from bridge.common import XMLNS_NS
+from bridge.common import XMLNS_NS, ANY_NAMESPACE
 
 raw = Encoding.GetEncoding('iso-8859-1')
 
@@ -412,9 +412,11 @@ class DispatchParser(IncrementalParser):
         self._element_dispatchers = {}
         self._path_dispatchers = {}
         self._element_level_dispatchers = {}
+        self.default_dispatcher = None
         self.disable_dispatching()
         
     def disable_dispatching(self):
+        self.default_dispatcher = None
         self.enable_level_dispatching = False
         self.enable_element_dispatching = False
         self.enable_dispatching_by_path = False
@@ -425,6 +427,12 @@ class DispatchParser(IncrementalParser):
         self.enable_element_dispatching = True
         self.enable_dispatching_by_path = True
         self.enable_element_by_level_dispatching = True
+
+    def register_default(self, handler):
+        self.default_dispatcher = handler
+
+    def unregister_default(self):
+        self.default_dispatcher = None
           
     def register_at_level(self, level, dispatcher):
         """Registers a dispatcher at a given level within the
@@ -517,21 +525,39 @@ class DispatchParser(IncrementalParser):
         IncrementalParser.handle_end_element(self, parent, depth)
         current_level = depth
         current_element = parent
+        dispatched = False
 
         if self.enable_level_dispatching:
             if current_level in self._level_dispatchers:
-                self._level_dispatchers[current_level](current_element)        
+                self._level_dispatchers[current_level](current_element) 
+                dispatched = True       
         if self.enable_element_dispatching:
             pattern = (current_element.xml_ns, current_element.xml_name)
             if pattern in self._element_dispatchers:
-                self._element_dispatchers[pattern](current_element)
+                self._element_dispatchers[pattern](current_element) 
+                dispatched = True 
+            else:
+                pattern = (ANY_NAMESPACE, current_element.xml_name)
+                if pattern in self._element_dispatchers:
+                    self._element_dispatchers[pattern](current_element)
+                    dispatched = True      
         if self.enable_element_by_level_dispatching:
             pattern = (current_level, (current_element.xml_ns, current_element.xml_name))
             if pattern in self._element_level_dispatchers:
-                self._element_level_dispatchers[pattern](current_element)
+                self._element_level_dispatchers[pattern](current_element) 
+                dispatched = True  
+            else:
+                pattern = pattern = (current_level, (ANY_NAMESPACE, current_element.xml_name))
+                if pattern in self._element_level_dispatchers:
+                    self._element_level_dispatchers[pattern](current_element)
+                    dispatched = True        
         if self.enable_dispatching_by_path:
             for path in self._path_dispatchers:
                 match_found = current_element.filtrate(lookup, path=path)
                 if match_found:
-                    self._path_dispatchers[path](match_found)
+                    self._path_dispatchers[path](match_found) 
+                    dispatched = True       
                     break
+
+        if not dispatched and callable(self.default_dispatcher):
+            self.default_dispatcher(current_element)
