@@ -112,9 +112,9 @@ class Parser(object):
                     continue
                 self.__append_text(child, element.as_cdata)
             elif isinstance(child, bridge.Comment):
-                self.buffer.append('<!--%s-->' % (child.data,))
+                self.buffer.append('<!--%s-->\n' % (child.data,))
             elif isinstance(child, bridge.PI):
-                self.buffer.append('<?%s %s?>' % (child.target, child.data))
+                self.buffer.append('<?%s %s?>\n' % (child.target, child.data))
             elif isinstance(child, bridge.Element):
                 ns_map = {}
                 ns_map.update(parent_ns_map or {})

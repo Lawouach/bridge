@@ -356,6 +356,17 @@ class Element(object):
         """
         self.xml_children.insert(self.xml_children.index(after_element) + 1, element)
 
+    def replace(self, current_element, new_element):
+        """
+        replaces the current element with a new element in the list
+        of children.
+        
+        Keyword arguments:
+        current_element -- element pivot
+        new_element -- new element to insert
+        """
+        self.xml_children[self.xml_children.index(current_element)] = new_element
+
     def collapse(self, separator='\n'):
         """
         Collapses all content of this element and its entire subtree.
