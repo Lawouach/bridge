@@ -321,19 +321,25 @@ class Element(object):
 
     def forget(self):
         """
-        deletes this instance of Element. It will also removes it
+        Deletes this instance of Element. It will also removes it
         from its parent children and attributes.
         """
         if self.xml_parent:
-            if self in self.xml_parent.xml_children:
-                self.xml_parent.xml_children.remove(self)
-            if hasattr(self.xml_parent, self.xml_name):
-                obj = getattr(self.xml_parent, self.xml_name)
-                if isinstance(obj, list):
-                    obj.remove(self)
-                elif isinstance(obj, Element):
-                    del obj
-            
+            self.remove_from(self.xml_parent)
+
+    def remove_from(self, element):
+        """
+        Removes the instance from the element parameter provided.
+        """
+        if self in element.xml_children:
+            element.xml_children.remove(self)
+        if hasattr(element, self.xml_name):
+            obj = getattr(element, self.xml_name)
+            if isinstance(obj, list):
+                obj.remove(self)
+            elif isinstance(obj, Element):
+                del obj
+        
     def insert_before(self, before_element, element):
         """
         Insert 'element' right before 'before_element'.
