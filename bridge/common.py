@@ -27,11 +27,11 @@ THR_NS = u'http://purl.org/syndication/thread/1.0'
 
 atom_as_attr = {ATOM10_NS: ['feed', 'id', 'title', 'updated', 'published', 'icon', 'logo', 'generator',
                             'rights', 'subtitle', 'content', 'summary', 'name', 'uri', 'email'],
-                ATOMPUB_NS: ['edited', 'accept'],
+                ATOMPUB_NS: ['edited'],
                 THR_NS: ['in-reply-to', 'total']}
 
 atom_as_list = {ATOM10_NS: ['author', 'contributor', 'category', 'link', 'entry'],
-                ATOMPUB_NS: ['collection', 'workspace', 'categories']}
+                ATOMPUB_NS: ['collection', 'workspace', 'categories', 'accept']}
 
 atom_attribute_of_element = {None: ['type', 'term', 'href', 'rel', 'scheme', 'label',
                                     'title', 'length', 'hreflang' 'src', 'ref'],

@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-__version__ = "0.3.2"
+__version__ = "0.3.3"
 __authors__ = ["Sylvain Hellegouarch (sh@defuze.org)"]
 __contributors__ = ['David Turner']
-__date__ = "2007/07/07"
+__date__ = "2007/07/19"
 __copyright__ = """
 Copyright (c) 2006, 2007 Sylvain Hellegouarch
 All rights reserved.
@@ -270,10 +270,22 @@ class Element(object):
             if attr.xml_name == name:
                 return attr
             
+    def get_attribute_value(self, name, default=None):
+        for attr in self.xml_attributes:
+            if attr.xml_name == name:
+                return unicode(attr)
+        return default
+            
     def get_attribute_ns(self, name, namespace):
         for attr in self.xml_attributes:
             if (attr.xml_name == name) and (attr.xml_ns == namespace):
                 return attr
+
+    def get_attribute_ns_value(self, name, namespace, default=None):
+        for attr in self.xml_attributes:
+            if (attr.xml_name == name) and (attr.xml_ns == namespace):
+                return unicode(attr)
+        return default
 
     def has_element(self, name, ns=None):
         """

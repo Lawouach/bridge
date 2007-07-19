@@ -10,7 +10,7 @@ for scheme in INSTALL_SCHEMES.values():
     scheme['data'] = scheme['purelib']
         
 setup(name = "bridge",
-      version = '0.3.2',
+      version = '0.3.3',
       description = "General purpose XML library for CPython and IronPython",
       maintainer = "Sylvain Hellegouarch",
       maintainer_email = "sh@defuze.org",
