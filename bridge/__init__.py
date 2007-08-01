@@ -275,6 +275,19 @@ class Element(object):
             if attr.xml_name == name:
                 return unicode(attr)
         return default
+    
+    def set_attribute_value(self, name, value):
+        """Sets the attribute value. If the attribute does not
+        exist it is created and set"""
+        found = False
+        for attr in self.xml_attributes:
+            if attr.xml_name == name:
+                attr.xml_text = value
+                found = True
+                break
+
+        if not found:
+            A(name, value, parent=self)
             
     def get_attribute_ns(self, name, namespace):
         for attr in self.xml_attributes:
@@ -286,7 +299,20 @@ class Element(object):
             if (attr.xml_name == name) and (attr.xml_ns == namespace):
                 return unicode(attr)
         return default
+    
+    def set_attribute_ns_value(self, name, value, namespace=None, prefix=None):
+        """Sets the attribute value in the given namespace. If the attribute does not
+        exist it is created and set"""
+        found = False
+        for attr in self.xml_attributes:
+            if (attr.xml_name == name) and (attr.xml_ns == namespace):
+                attr.xml_text = value
+                found = True
+                break
 
+        if not found:
+            A(name, value, prefix=prefix, namespace=namespace, parent=self)
+            
     def has_element(self, name, ns=None):
         """
         Checks if this element has 'name' attribute
@@ -331,6 +357,58 @@ class Element(object):
         """
         return self.filtrate(fetch_children, child_name=name, child_ns=ns, recursive=recursive)
 
+    def get_children_without(self, without=None):
+        """
+        Returns a list of children not belonging to the types passed in
+        ``without`` which must be a list or None. If None is passed
+        then returns self.xml_children.
+
+        feed.get_children_without(without=[str, Comment])
+
+        This will return all the children which are not of type string or bridge.Comment.
+        """
+        if not without:
+            return self.xml_children
+
+        children = []
+        for child in self.xml_children:
+            keep = True
+            for t in without:
+                if isinstance(child, t):
+                    keep = False
+                    break
+
+            if keep:
+                children.append(child)
+
+        return children
+    
+    def get_children_with(self, with=None):
+        """
+        Returns a list of children belonging only to the types passed in
+        ``with`` which must be a list or None. If None is passed
+        then returns self.xml_children.
+
+        feed.get_children_with(without=[Element])
+
+        This will return all the children which are of type bridge.Element
+        """
+        if not with:
+            return self.xml_children
+
+        children = []
+        for child in self.xml_children:
+            keep = False
+            for t in with:
+                if isinstance(child, t):
+                    keep = True
+                    break
+
+            if keep:
+                children.append(child)
+
+        return children
+    
     def forget(self):
         """
         Deletes this instance of Element. It will also removes it
