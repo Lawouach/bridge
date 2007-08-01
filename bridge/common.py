@@ -249,3 +249,8 @@ RDF_IMDB_NS = u'http://www.csd.abdn.ac.uk/~ggrimnes/dev/imdb/IMDB#'
 LLUP_NS = u"http://www.x2x2x.org/llup"
 LLUP_PREFIX = u'llup'
 
+###########################################################
+# http://trac.defuze.org/ns
+###########################################################
+DEFUZE_QS_NS = u"http://purl.oclc.org/DEFUZE/qs"
+DEFUZE_QS_PREFIX = None
