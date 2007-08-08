@@ -461,7 +461,6 @@ class DispatchHandler(IncrementalHandler):
         if len(self._path_dispatchers) == 0:
             self.enable_dispatching_by_path = False
 
-        
     def endElementNS(self, name, qname):
         self._current_level = current_level = self._current_level - 1
         current_element = self._current_el

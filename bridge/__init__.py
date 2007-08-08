@@ -472,7 +472,7 @@ class Element(object):
             if isinstance(child, unicode) or isinstance(child, str):
                 text.append(child)
             elif isinstance(child, Element):
-                text.append(self.collapse(child, separator))
+                text.append(child.collapse(separator))
 
         return separator.join(text)
 

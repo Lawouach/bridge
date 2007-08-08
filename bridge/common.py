@@ -254,3 +254,9 @@ LLUP_PREFIX = u'llup'
 ###########################################################
 DEFUZE_QS_NS = u"http://purl.oclc.org/DEFUZE/qs"
 DEFUZE_QS_PREFIX = None
+
+###########################################################
+# AWS http://aws.amazon.com/sqs
+###########################################################
+AWS_SQS_20070501_NS = u'http://queue.amazonaws.com/doc/2007-05-01/'
+AWS_SQS_20070501_PREFIX = None
