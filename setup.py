@@ -1,5 +1,5 @@
 """
-General purpose XML library for CPython and IronPython"
+General purpose XML library for CPython and IronPython
 """
 
 #from distutils.core import setup
@@ -10,7 +10,7 @@ for scheme in INSTALL_SCHEMES.values():
     scheme['data'] = scheme['purelib']
         
 setup(name = "bridge",
-      version = '0.3.4',
+      version = '0.3.5',
       description = "General purpose XML library for CPython and IronPython",
       maintainer = "Sylvain Hellegouarch",
       maintainer_email = "sh@defuze.org",
