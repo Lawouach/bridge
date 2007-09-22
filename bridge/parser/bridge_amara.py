@@ -38,8 +38,11 @@ class IncrementalHandler(xss.XMLGenerator):
         prefix = None
         if uri and uri in self._current_context:
             prefix = self._current_context[uri]
-        e = self._root.xml_create_element(qname, ns=uri)
-        
+        if qname:
+            e = self._root.xml_create_element(qname, ns=uri)
+        else:
+            e = self._root.xml_create_element(local_name, ns=uri)
+
         for name, value in attrs.items():
             (namespace, local_name) = name
             qname = attrs.getQNameByName(name)
