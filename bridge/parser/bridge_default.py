@@ -215,13 +215,22 @@ import StringIO
 
 class IncrementalHandler(xss.XMLGenerator):
     def __init__(self, out, encoding=ENCODING):
-        xss.XMLGenerator.__init__(self, out, encoding)
-        self._current_el = self._root = bridge.Document()
+        xss.XMLGenerator.__init__(self, out, encoding) 
+        self._root = bridge.Document()
+        self._current_el = self._root
         self._current_level = 0
         self._as_cdata = False
         self.as_attribute = {}
         self.as_list = {}
         self.as_attribute_of_element = {}
+
+    def reset(self):
+        del self._current_el
+        del self._root
+        self._current_el = None
+        self._root = bridge.Document()
+        self._current_el = self._root
+        self._current_level = 0
 
     def startDocument(self):
         self._root = bridge.Document()
@@ -310,6 +319,7 @@ class IncrementalParser(object):
         self.parser.feed(chunk)
         
     def reset(self):
+        self.handler.reset()
         self.parser.reset()
 
 class DispatchHandler(IncrementalHandler):
@@ -524,6 +534,7 @@ class DispatchParser(object):
         self.handler.unregister_default()
           
     def reset(self):
+        self.handler.reset()
         self.parser.reset()
 
     def disable_dispatching(self):

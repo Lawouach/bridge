@@ -21,7 +21,16 @@ from bridge.parser.bridge_default import DispatchHandler as DefaultDispatchHandl
 class IncrementalHandler(xss.XMLGenerator):
     def __init__(self, out, encoding=ENCODING):
         xss.XMLGenerator.__init__(self, out, encoding)
-        self._current_el = self._root = amara.create_document()
+        self._root = amara.create_document()
+        self._current_el = self._root
+        self._current_level = 0
+
+    def reset(self):
+        del self._current_el
+        del self._root
+        self._current_el = None
+        self._root = amara.create_document()
+        self._current_el = self._root
         self._current_level = 0
 
     def startDocument(self):
@@ -96,6 +105,7 @@ class IncrementalParser(object):
         self.parser.feed(chunk)
         
     def reset(self):
+        self.handler.reset()
         self.parser.reset()
 
 class DispatchHandler(IncrementalHandler, DefaultDispatchHandler):
