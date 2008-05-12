@@ -357,23 +357,23 @@ class Element(object):
         """
         return self.filtrate(fetch_children, child_name=name, child_ns=ns, recursive=recursive)
 
-    def get_children_without(self, without=None):
+    def get_children_without(self, types=None):
         """
         Returns a list of children not belonging to the types passed in
-        ``without`` which must be a list or None. If None is passed
+        ``types`` which must be a list or None. If None is passed
         then returns self.xml_children.
 
-        feed.get_children_without(without=[str, Comment])
+        feed.get_children_without(types=[str, Comment])
 
         This will return all the children which are not of type string or bridge.Comment.
         """
-        if not without:
+        if not types:
             return self.xml_children
 
         children = []
         for child in self.xml_children:
             keep = True
-            for t in without:
+            for t in types:
                 if isinstance(child, t):
                     keep = False
                     break
@@ -383,23 +383,23 @@ class Element(object):
 
         return children
     
-    def get_children_with(self, with=None):
+    def get_children_with(self, types=None):
         """
         Returns a list of children belonging only to the types passed in
-        ``with`` which must be a list or None. If None is passed
+        ``types`` which must be a list or None. If None is passed
         then returns self.xml_children.
 
-        feed.get_children_with(without=[Element])
+        feed.get_children_with(types=[Element])
 
         This will return all the children which are of type bridge.Element
         """
-        if not with:
+        if not types:
             return self.xml_children
 
         children = []
         for child in self.xml_children:
             keep = False
-            for t in with:
+            for t in types:
                 if isinstance(child, t):
                     keep = True
                     break
