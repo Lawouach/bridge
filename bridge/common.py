@@ -220,6 +220,9 @@ XMPP_VERSION_PREFIX = None
 XMPP_VCARD_NS = u'vcard-temp'
 XMPP_VCARD_PREFIX = u'vcard'
 
+XMPP_USER_PROFILE_NS = u'urn:xmpp:tmp:profile'
+XMPP_USER_PROFILE_PREFIX = None
+
 xmpp_as_attr = {}
 xmpp_as_attr.update(xmpp_client_as_attr)
 xmpp_as_attr.update(xmpp_pubsub_as_attr)
