@@ -287,7 +287,7 @@ class Element(object):
                 break
 
         if not found:
-            A(name, value, parent=self)
+            Attribute(name, value, parent=self)
             
     def get_attribute_ns(self, name, namespace):
         for attr in self.xml_attributes:
@@ -311,7 +311,7 @@ class Element(object):
                 break
 
         if not found:
-            A(name, value, prefix=prefix, namespace=namespace, parent=self)
+            Attribute(name, value, prefix=prefix, namespace=namespace, parent=self)
             
     def has_element(self, name, ns=None):
         """
