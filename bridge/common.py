@@ -186,6 +186,10 @@ XMPP_EVENT_PREFIX = None
 XMPP_LAST_NS = u'jabber:iq:last'
 XMPP_LAST_PREFIX = None
 
+# see http://xmpp.org/extensions/xep-0092.html
+XMPP_VERSION_NS = u'jabber:iq:version'
+XMPP_VERSION_PREFIX = None
+
 # see http://www.xmpp.org/extensions/xep-0095.html
 XMPP_SI_NS = u'http://jabber.org/protocol/si'
 XMPP_SI_PREFIX = None

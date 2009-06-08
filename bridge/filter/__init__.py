@@ -122,14 +122,22 @@ def find_by_id(element, id):
     return result
 
 def tokenize_path(path):
+    length = len(path)
+    
     def handle_ns(start):
         pos = path.find('}', start)
         end = path.find('/', pos)
+        while 1:
+            end = path.find('/', pos)
+            if end == -1 or end == length:
+                break
+            if path[end+1] == '{':
+                break
+            pos = end + 1
         return end
 
     path = path.lstrip('.')
     start = 0
-    length = len(path)
     while 1:
         if path[start] == '{':
             end = handle_ns(start)
@@ -139,8 +147,9 @@ def tokenize_path(path):
             else:
                 end = path.find('/', start + 1)
         else:
-            end = path.find('/', start)
-            
+            idx = start
+            end = path.find('/', idx)
+
         if end != -1:
             yield path[start:end].strip('/')
         else:
