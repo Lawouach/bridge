@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-__version__ = "0.3.7"
+__version__ = "0.3.8"
 __authors__ = ["Sylvain Hellegouarch (sh@defuze.org)"]
 __contributors__ = ['David Turner']
-__date__ = "2000/06/08"
+__date__ = "2009/06/22"
 __copyright__ = """
 Copyright (c) 2006, 2007, 2008, 2009 Sylvain Hellegouarch
 All rights reserved.
@@ -33,6 +33,7 @@ CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE 
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
+__docformat__ = "restructuredtext en"
 
 ENCODING = 'UTF-8'
 DUMMY_URI = u'http://dummy.com'
@@ -43,6 +44,15 @@ from bridge.common import  XML_NS, XMLNS_NS
 __all__ = ['Attribute', 'Element', 'PI', 'Comment', 'Document']
 
 class PI(object):
+    """
+    Represents a XML processing instruction.
+    
+    :Parameters:
+      - `target`: The PI target value
+      - `data`: The PI value itself
+      - `parent`: Parent to which attach this PI
+
+    """
     def __init__(self, target, data, parent=None):
         self.target = target
         self.data = data
@@ -52,6 +62,14 @@ class PI(object):
             self.xml_parent.xml_children.append(self)
 
 class Comment(object):
+    """
+    Represents a XML comment
+    
+    :Parameters:
+      - `data`: The comment value
+      - `parent`: Parent to which attach this comment
+
+    """
     def __init__(self, data, parent=None):
         self.data = data
         self.xml_parent = parent
@@ -62,24 +80,23 @@ class Comment(object):
 class Attribute(object):
     """
     Maps the attribute of an XML element to a simple Python object.
+
+    Note that names containing dot will see those replaced by underscores.
+
+    :Parameters:
+      - `name`: attribute's name`(unicode)
+      - `value`: content of the attribute (unicode)
+      - `prefix`: XML prefix of the element (unicode)
+      - `namespace`: XML namespace defining the prefix (unicode)
+      - `parent`: element which this attribute belongs to.
     """
 
     encoding = ENCODING
     as_attribute_of_element = None
     
     def __init__(self, name=None, value=None, prefix=None, namespace=None, parent=None):
-        """
-        Maps the attribute of an XML element to a simple Python object.
-
-        Keyword arguments:
-        name -- Name of the attribute
-        value -- content of the attribute
-        prefix -- XML prefix of the element
-        namespace -- XML namespace defining the prefix
-        parent -- element which this attribute belongs to
-        """
         if value and not isinstance(value, unicode):
-            raise TypeError, "Attribute's (%s) value must be an unicode object or None. Got %s instead." % (name, str(type(value)))
+            raise TypeError("Attribute's (%s) value must be an unicode object or None. Got %s instead." % (name, str(type(value))))
         
         self.xml_parent = parent
         self.xml_ns = namespace
@@ -122,35 +139,32 @@ class Attribute(object):
 class Element(object):
     """
     Maps an XML element to a Python object.
+    
+    If `parent` is not None, `self` will be added to the `parent.xml_children` list.
+    
+    If `Element.as_list` is set and if (name, namespace) belongs to it
+    then we will add a list to parent with the name of the element
+    
+    If `Element.as_attribute` is set and if (name, namespace) belongs to it
+    then we will add an attribute to parent with the name of the element
+    
+    :Parameters:
+      - `name` -- Name of the XML element (unicode)
+      - `content`: Content of the element (unicode)
+      - `attributes`: dictionary of the form {local_name: value}
+      - `prefix`:  XML prefix of the element (unicode)
+      - `namespace`: XML namespace attached to that element (unicode)
+      - `parent`: Parent element of this element.
     """
-
     parser = None
     encoding = ENCODING
     as_list = None
     as_attribute = None
     
     def __init__(self, name=None, content=None, attributes=None, prefix=None, namespace=None, parent=None):
-        """
-        Maps an XML element to a Python object.
         
-        Keyword arguments:
-        name -- Name of the XML element
-        content -- Content of the element
-        attributes -- dictionary of the form {local_name: value}
-        prefix -- XML prefix of the element
-        namespace -- XML namespace attached to that element
-        parent -- Parent element of this element.
-        
-        If 'parent' is not None, 'self' will be added to the parent.xml_children
-
-        If 'Element.as_list' is set and if (name, namespace) belongs to it
-        then we will add a list to parent with the name of the element
-        
-        If 'Element.as_attribute' is set and if (name, namespace) belongs to it
-        then we will add an attribute to parent with the name of the element
-        """
         if content and not isinstance(content, unicode):
-            raise TypeError, "Element's content (%s) must be an unicode object or None. Got %s instead." % (name, str(type(content)))
+            raise TypeError("Element's content (%s) must be an unicode object or None. Got %s instead." % (name, str(type(content))))
 
         self.as_attribute = {}
         self.as_list= {}
@@ -226,13 +240,16 @@ class Element(object):
         return Element.load(self.xml(encoding=self.encoding, omit_declaration=True))
 
     def clone(self):
+        """
+        Creates a new instance of the current element. The entire subtree is cloned as well.
+        """
         return Element.load(self.xml(encoding=self.encoding, omit_declaration=True),
                             as_attribute=self.as_attribute, as_list=self.as_list,
                             as_attribute_of_element=self.as_attribute_of_element)
         
     def __delattr__(self, name):
         """
-        deletes 'name' instance of Element. It will also removes it
+        Deletes `name` instance of Element. It will also removes it
         from its parent children and attributes.
         """
         if not hasattr(self, name):
@@ -266,19 +283,31 @@ class Element(object):
     xml_root = property(get_root, doc="Retrieve the top level element")
 
     def get_attribute(self, name):
+        """
+        Goes through this element's attributes and match the first one called after `name`.
+        
+        Returns `None` when not found.
+        """
         for attr in self.xml_attributes:
             if attr.xml_name == name:
                 return attr
             
     def get_attribute_value(self, name, default=None):
+        """
+        Returns the value of the first attribute matching `name`.
+
+        Returns `default` when not found.
+        """
         for attr in self.xml_attributes:
             if attr.xml_name == name:
                 return unicode(attr)
         return default
     
     def set_attribute_value(self, name, value):
-        """Sets the attribute value. If the attribute does not
-        exist it is created and set"""
+        """
+        Sets the attribute value. If the attribute does not
+        exist it is created and set with `name`and `value`.
+        """
         found = False
         for attr in self.xml_attributes:
             if attr.xml_name == name:
@@ -315,11 +344,11 @@ class Element(object):
             
     def has_element(self, name, ns=None):
         """
-        Checks if this element has 'name' attribute
+        Checks if this element has `name` attribute
 
-        Keyword arguments:
-        name -- local name of the element
-        ns -- namespace of the element
+        :Parameters:
+          - `name`: local name of the element
+          - `ns`: namespace of the element
         """
         obj = getattr(self, name, None)
         if obj:
@@ -330,9 +359,9 @@ class Element(object):
         """
         Checks if this element has a child named 'name' in its children elements
 
-        Keyword arguments:
-        name -- local name of the element
-        ns -- namespace of the element
+        :Parameters:
+          - `name`: local name of the element
+          - `ns`: namespace of the element
         """
         return self.filtrate(fetch_child, child_name=name, child_ns=ns) != None
     
@@ -340,9 +369,9 @@ class Element(object):
         """
         Returns the child element named 'name', None if not found.
 
-        Keyword arguments:
-        name -- local name of the element
-        ns -- namespace of the element
+        :Parameters:
+          -`name`: local name of the element
+          - `ns`: namespace of the element
         """
         return self.filtrate(fetch_child, child_name=name, child_ns=ns)
     
@@ -350,10 +379,10 @@ class Element(object):
         """
         Returns the all children of this element named 'name'
         
-        Keyword arguments:
-        name -- local name of the element
-        ns -- namespace of the element
-        recursive -- if True this will iterate through the entire tree
+        :Parameters:
+          - `name`: local name of the element
+          - `ns`: namespace of the element
+          - `recursive`: if True this will iterate through the entire tree
         """
         return self.filtrate(fetch_children, child_name=name, child_ns=ns, recursive=recursive)
 
@@ -363,7 +392,7 @@ class Element(object):
         ``types`` which must be a list or None. If None is passed
         then returns self.xml_children.
 
-        feed.get_children_without(types=[str, Comment])
+        >>> feed.get_children_without(types=[str, Comment])
 
         This will return all the children which are not of type string or bridge.Comment.
         """
@@ -385,11 +414,11 @@ class Element(object):
     
     def get_children_with(self, types=None):
         """
-        Returns a list of children belonging only to the types passed in
-        ``types`` which must be a list or None. If None is passed
-        then returns self.xml_children.
+        Returns a list of children belonging only to the `types` passed in
+        `types` which must be a list or None. If None is passed
+        then returns `self.xml_children`.
 
-        feed.get_children_with(types=[Element])
+        >>> feed.get_children_with(types=[Element])
 
         This will return all the children which are of type bridge.Element
         """
@@ -432,34 +461,34 @@ class Element(object):
         
     def insert_before(self, before_element, element):
         """
-        Insert 'element' right before 'before_element'.
-        This only inserts the new element in self.xml_children
+        Inserts `element` right before `before_element`.
+        This only inserts the new element in `self.xml_children`.
 
-        Keyword arguments:
-        before_element -- element pivot
-        element -- new element to insert
+        :Parameters:
+          - `before_element`: element pivot
+          - `element`: new element to insert
         """
         self.xml_children.insert(self.xml_children.index(before_element), element)
 
     def insert_after(self, after_element, element):
         """
-        Insert 'element' right after 'after_element'.
-        This only inserts the new element in self.xml_children
+        Insert `element` right after `after_element`.
+        This only inserts the new element in `self.xml_children`.
 
-        Keyword arguments:
-        after_element -- element pivot
-        element -- new element to insert
+        :Parameters:
+          - `after_element`: element pivot
+          - `element`: new element to insert
         """
         self.xml_children.insert(self.xml_children.index(after_element) + 1, element)
 
     def replace(self, current_element, new_element):
         """
-        replaces the current element with a new element in the list
+        Replaces the current element with a new element in the list
         of children.
         
-        Keyword arguments:
-        current_element -- element pivot
-        new_element -- new element to insert
+        :Parameters:
+          - `current_element`: element pivot
+          - `new_element`: new element to insert
         """
         self.xml_children[self.xml_children.index(current_element)] = new_element
 
@@ -478,7 +507,7 @@ class Element(object):
 
     def is_mixed_content(self):
         """
-        Returns True if the direct children of this element makes are
+        Returns `True` if the direct children of this element makes are
         in mixed content.
         """
         for child in self.xml_children:
@@ -489,14 +518,17 @@ class Element(object):
 
     def xml(self, indent=True, encoding=ENCODING, prefixes=None, omit_declaration=False, parser=None):
         """
-        Serializes as a string this element
+        Serializes this element as a string.
 
-        Keyword arguments
-        indent -- pretty print the XML string (defaut: True)
-        encoding -- encoding to use during the serialization process
-        prefixes -- dictionnary of prefixes of the form {'prefix': 'ns'}
-        omit_declaration -- prevent the result to start with the XML declaration
-        parser -- instance of an existing parser, if not provided the default one will be used
+        :Parameters:
+          - `indent`: pretty print the XML string (defaut: True)
+          - `encoding`: encoding to use during the serialization process
+          - `prefixes`: dictionnary of prefixes of the form {'prefix': 'ns'}
+          - `omit_declaration`: prevent the result to start with the XML declaration
+          - `parser`: instance of an existing parser, if not provided the default one will be used
+
+        :Returns:
+          The XML string representing the current element.
         """
         if not parser and self.parser:
             parser = self.parser()
@@ -514,13 +546,12 @@ class Element(object):
         """
         Load source into an Element instance
 
-        Keyword arguments:
-        source -- an XML string, a file path or a file object
-        prefixes -- dictionnary of prefixes of the form {'prefix': 'ns'}
-        as_attribute -- dictionary of element names to set as attribute of their parent
-        as_list -- dictionary of element names to set into a list of their parent
-        as_attribute_of_element -- dictionary of attribute names to set as attribute of their
-        parent
+        :Parameters:
+          - `source`: an XML string, a file path or a file object
+          - `prefixes`: dictionnary of prefixes of the form {'prefix': 'ns'}
+          - `as_attribute`: dictionary of element names to set as attribute of their parent
+          - `as_list`: dictionary of element names to set into a list of their parent
+          - `as_attribute_of_element`: dictionary of attribute names to set as attribute of their parent
 
         If any of those last three parameters are provided they will take
         precedence over those set on the Element and Attribute class.
@@ -561,11 +592,11 @@ class Element(object):
         """
         Updates prefixes of all the element of document matching (src, srcns)
 
-        Keyword arguments:
-        dst -- new prefix to be used
-        srcns -- source namespace
-        dstns -- destination namespace
-        update_attributes -- update attributes' namespace as well (default: True)
+        :Parameters:
+          - `dst`: new prefix to be used
+          - `srcns`: source namespace
+          - `dstns`: destination namespace
+          - `update_attributes`: update attributes' namespace as well (default: True)
         """
         self.__update_prefixes(self, dst, srcns, dstns, update_attributes)
 
@@ -574,8 +605,8 @@ class Element(object):
         Applies a filter to this element. Returns what is returned from
         some_filter.
 
-        Keyword arguments:
-        some_filter -- a callable(**kwargs)
+        :Parameters:
+          - `some_filter`: a callable(**kwargs)
         """
         return some_filter(element=self, **kwargs)
 
