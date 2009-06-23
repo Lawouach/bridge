@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+__docformat__ = "restructuredtext en"
 
 __all__ = ['remove_duplicate_namespaces_declaration',
            'remove_useless_namespaces_decalaration',
@@ -12,16 +13,17 @@ from bridge.common import XMLNS_NS
 
 def fetch_child(element, child_name, child_ns):
     """
-    Returns the first child named 'child_name' with the namespace 'child_ns'
+    Returns the first child named `child_name` with the namespace `child_ns`
 
     Use it like this:
-    e = Element.load('<root><id /></root>')
-    child = e.filtrate(fetch_child, child_name='id', child_ns=None)
 
-    Keyword arguments:
-    element -- parent element to go through
-    child_name -- name of the element to lookup
-    child_ns -- namespace of the element to lookup
+    >>> e = Element.load('<root><id /></root>')
+    >>> child = e.filtrate(fetch_child, child_name='id', child_ns=None)
+
+    :Parameters:
+      - `element`: parent element to go through
+      - `child_name`: name of the element to lookup
+      - `child_ns`: namespace of the element to lookup
     """
     for child in element.xml_children:
         if isinstance(child, bridge.Element):
@@ -33,16 +35,17 @@ def fetch_child(element, child_name, child_ns):
 
 def fetch_children(element, child_name, child_ns, recursive=False):
     """
-    Returns the list of children named 'child_name' with the namespace 'child_ns'
+    Returns the list of children named `child_name` with the namespace `child_ns`
 
     Use it like this:
-    e = Element.load('<root><node /></node /></root>')
-    children = e.filtrate(fetch_children, child_name='node', child_ns=None)
     
-    Keyword arguments:
-    element -- parent element to go through
-    child_name -- name of the element to lookup
-    child_ns -- namespace of the element to lookup
+    >>> e = Element.load('<root><node /></node /></root>')
+    >>> children = e.filtrate(fetch_children, child_name='node', child_ns=None)
+    
+    :Parameters:
+      - `element`: parent element to go through
+      - `child_name`: name of the element to lookup
+      - `child_ns`: namespace of the element to lookup
     """
     children = []
     element_type = type(element)
@@ -62,8 +65,8 @@ def remove_useless_namespaces_decalaration(element):
     Will recursuvely go through all the elements of a fragment
     and remove duplicate XML namespace declaration
 
-    Keyword arguments:
-    element -- root element to start from
+    :Parameters:
+      - `element`: root element to start from
     """
     attrs = element.xml_attributes[:]
     for attr in attrs:
@@ -81,9 +84,9 @@ def remove_duplicate_namespaces_declaration(element, visited_ns=None):
     Will recursuvely go through all the elements of a fragment
     and remove duplicate XML namespace declaration
 
-    Keyword arguments:
-    element -- root element to start from
-    visited_ns -- list of already visited namespace
+    :Parameters:
+      - `element`: root element to start from
+      - `visited_ns`: list of already visited namespace
     """
     if visited_ns is None:
         visited_ns = []
@@ -102,10 +105,10 @@ def remove_duplicate_namespaces_declaration(element, visited_ns=None):
 
 def find_by_id(element, id):
     """
-    Looks for an element having the provided 'id'
+    Looks for an element having the provided `id`
     into the children recursively.
 
-    Returns the found element or None.
+    Returns the found element or `None`.
     """
     result = None
     for child in element.xml_children:
@@ -177,7 +180,8 @@ def next_token(path):
             yield (uri, local_name, None, None)
 
 def lookup(element, path):
-    """Perfoms a lookup of an element matching the path provided
+    """
+    Perfoms a lookup of an element matching the path provided
     This path looks like an XPath query but that's where the
     comparison should stop. This is not an XPath engine.
 
@@ -191,7 +195,7 @@ def lookup(element, path):
     >>> e.filtrate(lookup, path=u'./{ui}o/b[@h="gr"]/c')
     <c element at 0xb7c0c30cL />
 
-    If the ``path`` starts with a '/' the matching will be
+    If `path` starts with a '/' the matching will be
     applied from the root element otherwise from the current
     element (like when it starts with './').
 
@@ -201,7 +205,7 @@ def lookup(element, path):
     Attribute matching is extremely simple and you can only match
     one attribute per branch.
 
-    This ultimately returns the matching element or None.
+    This ultimately returns the matching element or `None`.
     """
     start_at = element
     if path[0] == '/':

@@ -606,7 +606,8 @@ class Element(object):
         some_filter.
 
         :Parameters:
-          - `some_filter`: a callable(**kwargs)
+          - `some_filter`: a callable
+          - `kwargs`: any additional data to pass to `some_filter`
         """
         return some_filter(element=self, **kwargs)
 

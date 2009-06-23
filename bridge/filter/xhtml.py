@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+__docformat__ = "restructuredtext en"
 
 from bridge.common import XHTML1_NS, XHTML1_PREFIX
 
@@ -13,8 +14,8 @@ def extract_meta(element):
     Extracts meta elements from an XHTML document and return them
     as a dictionnary of the form name: content
 
-    Keyword argument:
-    element -- Element instance to start with
+    :Parameters:
+      - `element`: Element instance to start with
     """
     metas = element.get_children('meta', XHTML1_NS)
     result = {}

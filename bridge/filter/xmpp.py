@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+__docformat__ = "restructuredtext en"
 
 from bridge import Element as E
 from bridge.common import XMPP_CLIENT_NS

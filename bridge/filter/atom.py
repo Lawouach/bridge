@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+__docformat__ = "restructuredtext en"
 
 from bridge.common import ATOM10_NS, ATOMPUB_NS, THR_NS, XHTML1_NS
 
@@ -54,16 +55,12 @@ def published_after(element, dt_pivot, strict=True, recursive=False, include_fee
     """
     Returns the list of elements which have been published after the given date.
 
-    Keyword arguments:
-    element -- atom feed or entry element
-    dt_pivot -- datetime instance to compare to
-    strict -- if True only accepts elements which are published strictly after
-    the dt_pivot. if False elmeents which published date equal dt_pivot will be included
-    in the result
-    recursive -- if the element is a feed and recursive is True it will iterate through
-    the feed entries as well
-    include_feed -- if the element is a feed, recursive is True but you don't want the
-    feed element to be part of the result set this to False
+    :Parameters:
+      - `element`: atom feed or entry element
+      - `dt_pivot`: datetime instance to compare to
+      - `strict`: If `True` only accepts elements which are published strictly after `dt_pivot`. If `False` elements which published date equal `dt_pivot` will be included in the result.
+      - `recursive`: if the element is a feed and recursive is `True` it will iterate through the feed entries as well
+      - `include_feed`: if the element is a feed, recursive is `True` but you don't want the feed element to be part of the result set this to `False`
     """
     return _cmp_date(_is_after_date, 'published', element, dt_pivot,
                      strict, recursive, include_feed)
@@ -71,17 +68,13 @@ def published_after(element, dt_pivot, strict=True, recursive=False, include_fee
 def updated_after(element, dt_pivot, strict=True, recursive=False, include_feed=True):
     """
     Returns the list of elements which have been updated  after the given date.
-
-    Keyword arguments:
-    element -- atom feed or entry element
-    dt_pivot -- datetime instance to compare to
-    strict -- if True only accepts elements which are published strictly after
-    the dt_pivot. if False elements which published date equals dt_pivot will be included
-    in the result
-    recursive -- if the element is a feed and recursive is True it will iterate through
-    the feed entries as well
-    include_feed -- if the element is a feed, recursive is True but you don't want the
-    feed element to be part of the result set this to False
+    
+    :Parameters:
+      - `element`: atom feed or entry element
+      - `dt_pivot`: datetime instance to compare to
+      - `strict`: If `True` only accepts elements which are updated strictly after `dt_pivot`. If `False` elements which updated date equal `dt_pivot` will be included in the result.
+      - `recursive`: if the element is a feed and recursive is `True` it will iterate through the feed entries as well
+      - `include_feed`: if the element is a feed, recursive is `True` but you don't want the feed element to be part of the result set this to `False`
     """
     return _cmp_date(_is_after_date, 'updated', element, dt_pivot,
                      strict, recursive, include_feed)
@@ -90,16 +83,13 @@ def published_before(element, dt_pivot, strict=True, recursive=False, include_fe
     """
     Returns the list of elements which have been published before the given date.
 
-    Keyword arguments:
-    element -- atom feed or entry element
-    dt_pivot -- datetime instance to compare to
-    strict -- if True only accepts elements which are published strictly before
-    the dt_pivot. if False elements which published date equals dt_pivot will be included
-    in the result
-    recursive -- if the element is a feed and recursive is True it will iterate through
-    the feed entries as well
-    include_feed -- if the element is a feed, recursive is True but you don't want the
-    feed element to be part of the result set this to False
+    
+    :Parameters:
+      - `element`: atom feed or entry element
+      - `dt_pivot`: datetime instance to compare to
+      - `strict`: If `True` only accepts elements which are published strictly before `dt_pivot`. If `False` elements which published date equal `dt_pivot` will be included in the result.
+      - `recursive`: if the element is a feed and recursive is `True` it will iterate through the feed entries as well
+      - `include_feed`: if the element is a feed, recursive is `True` but you don't want the feed element to be part of the result set this to `False`
     """
     return _cmp_date(_is_before_date, 'published', element, dt_pivot,
                      strict, recursive, include_feed)
@@ -108,16 +98,13 @@ def updated_before(element, dt_pivot, strict=True, recursive=False, include_feed
     """
     Returns the list of elements which have been updated before the given date.
 
-    Keyword arguments:
-    element -- atom feed or entry element
-    dt_pivot -- datetime instance to compare to
-    strict -- if True only accepts elements which are updated strictly before
-    the dt_pivot. if False elements which updated date equals dt_pivot will be included
-    in the result
-    recursive -- if the element is a feed and recursive is True it will iterate through
-    the feed entries as well
-    include_feed -- if the element is a feed, recursive is True but you don't want the
-    feed element to be part of the result set this to False
+    
+    :Parameters:
+      - `element`: atom feed or entry element
+      - `dt_pivot`: datetime instance to compare to
+      - `strict`: If `True` only accepts elements which are updated strictly before `dt_pivot`. If `False` elements which updated date equal `dt_pivot` will be included in the result.
+      - `recursive`: if the element is a feed and recursive is `True` it will iterate through the feed entries as well
+      - `include_feed`: if the element is a feed, recursive is `True` but you don't want the feed element to be part of the result set this to `False`
     """
     return _cmp_date(_is_before_date, 'updated', element, dt_pivot,
                      strict, recursive, include_feed)
@@ -138,10 +125,10 @@ def lookup_entry(element, id):
 
 def lookup_links(element, **kwargs):
     """
-    returns a list of links matching the attributes passed as parameters.
+    Returns a list of links matching the attributes passed as parameters.
     For instance:
 
-    lookup_links(entry, rel=u'alternate', type=u'text/html')
+    >>> lookup_links(entry, rel=u'alternate', type=u'text/html')
     """
     results = []
     if element.has_child(u'link', ATOM10_NS):
@@ -171,8 +158,8 @@ def requires_summary(element):
     Returns True if the entry requires an atom:summary
     to be added based on section 4.1.2 of RFC 4287.
 
-    Keyword argument:
-    element -- entry element
+    :Parameters:
+      - `element`: entry element
     """
     # atom:entry elements MUST contain an atom:summary element in either of the following cases:
     #   * the atom:entry contains an atom:content that has a "src" attribute (and is thus empty).
@@ -204,8 +191,8 @@ def requires_author(element):
     Returns True if the entry requires an atom:author
     to be added based on section 4.1.2 of RFC 4287.
 
-    Keyword argument:
-    element -- entry element
+    :Parameters:
+      - `element`: entry element
     """
     # atom:entry elements MUST contain one or more atom:author elements,
     # unless the atom:entry contains an atom:source element
@@ -267,7 +254,7 @@ def fetch_empty_authors(element, matching=None):
     Return a list of atom:author elements which have an empty text for the
     children specified in 'matching' (which if not provided defaults to "name")
 
-    fetch_empty_authors(entry, matching=['name', 'email'])
+    >>> fetch_empty_authors(entry, matching=['name', 'email'])
     """
     if not matching:
         matching = ['name', 'email', 'uri']
