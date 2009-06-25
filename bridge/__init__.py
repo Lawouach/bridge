@@ -443,8 +443,25 @@ class Element(object):
         Deletes this instance of Element. It will also removes it
         from its parent children and attributes.
         """
-        if self.xml_parent:
+        self.as_attribute = {}
+        self.as_list = {}
+        self.as_attribute_of_element = {}
+
+        self._root = None
+
+        for attr in self.xml_attributes:
+            attr.as_attribute_of_element = {}
+            attr.xml_parent = None
+        self.xml_attributes = []
+
+        for child in self.xml_children:
+            child.forget()
+
+        if self.xml_parent:            
             self.remove_from(self.xml_parent)
+
+        self.xml_parent = None
+        self.xml_children = []
 
     def remove_from(self, element):
         """

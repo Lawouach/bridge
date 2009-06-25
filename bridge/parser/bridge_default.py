@@ -225,9 +225,12 @@ class IncrementalHandler(xss.XMLGenerator):
         self.as_attribute_of_element = {}
 
     def reset(self):
-        del self._current_el
-        del self._root
-        self._current_el = None
+        if self._root:
+            self._root.forget()
+            self._root = None
+        if self._current_el:
+            self._current_el.forget()
+            self._current_el = None
         self._root = bridge.Document()
         self._current_el = self._root
         self._current_level = 0
