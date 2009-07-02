@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-__version__ = "0.3.8"
+__version__ = "0.3.9"
 __authors__ = ["Sylvain Hellegouarch (sh@defuze.org)"]
 __contributors__ = ['David Turner']
-__date__ = "2009/06/22"
+__date__ = "2009/07/01"
 __copyright__ = """
 Copyright (c) 2006, 2007, 2008, 2009 Sylvain Hellegouarch
 All rights reserved.
@@ -455,11 +455,13 @@ class Element(object):
         self.xml_attributes = []
 
         for child in self.xml_children:
-            child.forget()
+            if isinstance(child, Element):
+                child.forget()
 
         if self.xml_parent:            
             self.remove_from(self.xml_parent)
 
+        self.xml_text = None
         self.xml_parent = None
         self.xml_children = []
 

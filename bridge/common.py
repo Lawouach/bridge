@@ -230,6 +230,12 @@ XMPP_USER_PROFILE_PREFIX = None
 XMPP_SHIM_NS = u'http://jabber.org/protocol/shim'
 XMPP_SHIM_PREFIX = None
 
+XMPP_COMPONENT_ACCEPT_NS = u"jabber:component:accept"
+XMPP_COMPONENT_ACCEPT_PREFIX = None
+
+XMPP_COMPONENT_CONNECT_NS = u"jabber:component:connect"
+XMPP_COMPONENT_CONNECT_PREFIX = None
+
 xmpp_as_attr = {}
 xmpp_as_attr.update(xmpp_client_as_attr)
 xmpp_as_attr.update(xmpp_pubsub_as_attr)

@@ -368,6 +368,7 @@ class DispatchHandler(IncrementalHandler):
         self._element_level_dispatchers = {}
         self._path_dispatchers = {}
         self.default_dispatcher = None
+        self.default_dispatcher_start_element = None
 
         self.disable_dispatching()
 
@@ -376,9 +377,16 @@ class DispatchHandler(IncrementalHandler):
 
     def unregister_default(self):
         self.default_dispatcher = None
-          
+
+    def register_default_start_element(self, handler):
+        self.default_dispatcher_start_handler = handler
+
+    def unregister_default_start_element(self):
+        self.default_dispatcher_start_element = None
+
     def disable_dispatching(self):
         self.default_dispatcher = None
+        self.default_dispatcher_start_element = None
         self.enable_level_dispatching = False
         self.enable_element_dispatching = False
         self.enable_element_by_level_dispatching = False
@@ -474,6 +482,11 @@ class DispatchHandler(IncrementalHandler):
         if len(self._path_dispatchers) == 0:
             self.enable_dispatching_by_path = False
 
+    def startElementNS(self, name, qname, attrs):
+        IncrementalHandler.startElementNS(self, name, qname, attrs)
+        if self.default_dispatcher_start_handler:
+            self.default_dispatcher_start_handler(self._current_el)
+
     def endElementNS(self, name, qname):
         self._current_level = current_level = self._current_level - 1
         current_element = self._current_el
@@ -535,6 +548,12 @@ class DispatchParser(object):
 
     def unregister_default(self):
         self.handler.unregister_default()
+
+    def register_default_start_element(self, handler):
+        self.handler.register_default_start_element(handler)
+
+    def unregister_default_start_element(self):
+        self.handler.unregister_default_start_element()
           
     def reset(self):
         self.handler.reset()
