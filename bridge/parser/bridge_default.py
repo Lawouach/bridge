@@ -1,8 +1,8 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
 import os
 import os.path
+from StringIO import StringIO
 
 __all__ = ['Parser', 'IncrementalParser', 'DispatchParser']
 
@@ -13,7 +13,10 @@ import xml.sax.handler as xsh
 import xml.sax.saxutils as xss
 from xml.sax.saxutils import quoteattr, escape, unescape
 
-import bridge
+from bridge import Element
+from bridge import Attribute
+from bridge import PI, Comment, Document
+
 from bridge import ENCODING
 from bridge.common import ANY_NAMESPACE
 
@@ -23,12 +26,12 @@ class Parser(object):
         
     def __deserialize_fragment(self, current, parent):
         if current.attributes:
-            for key in current.attributes.keys():
+            for key in iter(current.attributes.keys()):
                 attr = current.attributes[key]
-                bridge.Attribute(attr.localName, attr.value,
-                                 attr.prefix, attr.namespaceURI, parent)
+                Attribute(attr.localName, attr.value,
+                          attr.prefix, attr.namespaceURI, parent)
 
-        children = current.childNodes
+        children = iter(current.childNodes)
         for child in children:
             nt = child.nodeType
             if nt == xd.Node.TEXT_NODE:
@@ -45,12 +48,12 @@ class Parser(object):
                 else:
                     parent.xml_children.append(data)
             elif nt == xd.Node.COMMENT_NODE:
-                bridge.Comment(data=unicode(child.data), parent=parent)
+                Comment(data=unicode(child.data), parent=parent)
             elif nt == xd.Node.PROCESSING_INSTRUCTION_NODE:
-                bridge.PI(target=unicode(child.target), data=unicode(child.data), parent=parent)
+                PI(target=unicode(child.target), data=unicode(child.data), parent=parent)
             elif nt == xd.Node.ELEMENT_NODE:
-                element = bridge.Element(name=child.localName, prefix=child.prefix,
-                                         namespace=child.namespaceURI, parent=parent)
+                element = Element(name=child.localName, prefix=child.prefix,
+                                  namespace=child.namespaceURI, parent=parent)
 
                 self.__deserialize_fragment(child, element)
 
@@ -60,16 +63,14 @@ class Parser(object):
         return name
     
     def __attrs(self, node):
-        attrs = {}
-        for attr in node.xml_attributes:
+        for attr_ns, attr_name in iter(node.xml_attributes):
+            if attr_ns == xd.XMLNS_NAMESPACE and attr_name == 'xmlns':
+                continue
+            attr = node.xml_attributes[(attr_ns, attr_name)]
             ns = attr.xml_ns
             prefix = attr.xml_prefix
             name = attr.xml_name
-            if ns == xd.XMLNS_NAMESPACE and name == 'xmlns':
-                continue
-            attrs[(ns, name, prefix)] = attr.xml_text or ''
-
-        return attrs
+            yield ns, name, prefix, attr.xml_text or ''
 
     def __append_namespace(self, prefix, ns):
         if prefix:
@@ -79,17 +80,16 @@ class Parser(object):
             
     def __build_ns_map(self, ns_map, element):
         for child in element.xml_children:
-            if isinstance(child, bridge.Element):
+            if isinstance(child, Element):
                 if child.xml_ns not in ns_map:
                     ns_map[child.xml_prefix] = child.xml_ns
-                for attr in child.xml_attributes:
-                    if attr.xml_ns not in ns_map:
-                        ns_map[attr.xml_ns] = attr._xml_prefix
+                for attr_ns, attr_name in child.xml_attributes:
+                    if attr_ns not in ns_map:
+                        ns_map[attr_ns] = child.xml_attributes[(attr_ns, attr_name)].xml_prefix
 
     def __is_known(self, ns_map, prefix, ns):
-        if prefix in ns_map:
-            if ns_map[prefix] == ns:
-                return True
+        if prefix in ns_map and ns_map[prefix] == ns:
+            return True
 
         ns_map[prefix] = ns
         return False
@@ -102,20 +102,13 @@ class Parser(object):
             self.buffer.append(']]>')
                     
     def __serialize_element(self, element, parent_ns_map=None):
-        children = element.xml_children
-        for child in children:
+        for child in iter(element.xml_children):
             if isinstance(child, basestring):
-                child = child.strip()
-                child = child.strip('\n')
-                child = child.strip('\r\n')
+                child = child.strip().strip('\n').strip('\r\n')
                 if not child:
                     continue
                 self.__append_text(child, element.as_cdata)
-            elif isinstance(child, bridge.Comment):
-                self.buffer.append('<!--%s-->\n' % (child.data,))
-            elif isinstance(child, bridge.PI):
-                self.buffer.append('<?%s %s?>\n' % (child.target, child.data))
-            elif isinstance(child, bridge.Element):
+            elif isinstance(child, Element):
                 ns_map = {}
                 ns_map.update(parent_ns_map or {})
                 prefix = ns = name = None
@@ -124,16 +117,14 @@ class Parser(object):
                 if child.xml_ns:
                     ns = child.xml_ns
         
-                name = child._local_name
+                name = child.xml_name
                 qname = self.__qname(name, prefix=prefix)
                 
                 self.buffer.append('<%s' % qname)
                 if not self.__is_known(ns_map, prefix, ns):
                     self.__append_namespace(prefix, ns)
 
-                attrs = self.__attrs(child)
-                
-                for ((ns, name, prefix), value) in attrs.items():
+                for ns, name, prefix, value in self.__attrs(child):
                     if ns is None:
                         pass
                     elif ns == xd.XML_NAMESPACE:
@@ -158,31 +149,34 @@ class Parser(object):
                     if child.xml_children:
                         self.__serialize_element(child, ns_map)
 
-                    self.buffer.extend('</%s>' % (qname, ))
+                    self.buffer.append('</%s>' % (qname, ))
                 else:
                     self.buffer.append(' />')
+            elif isinstance(child, Comment):
+                self.buffer.append('<!--%s-->\n' % (child.data,))
+            elif isinstance(child, PI):
+                self.buffer.append('<?%s %s?>\n' % (child.target, child.data))
 
 
-    def serialize(self, document, indent=False, encoding=bridge.ENCODING, prefixes=None, omit_declaration=False):
-        if not isinstance(document, bridge.Document):
+    def serialize(self, document, indent=False, encoding=ENCODING, prefixes=None, omit_declaration=False):
+        if not isinstance(document, Document):
             root = document
-            document = bridge.Document()
+            document = Document()
             document.xml_children.append(root)
 
         self.__serialize_element(document)
 
-        end_of_line = ''
-        if indent:
-            end_of_line = os.linesep
         if not omit_declaration:
-            self.buffer.insert(0, '<?xml version="1.0" encoding="%s"?>%s' % (encoding, end_of_line))
+            self.buffer.insert(0, '<?xml version="1.0" encoding="%s"?>%s' % (encoding, os.linesep))
             
         content = ''.join(self.buffer)
         self.buffer = []
-        return content.rstrip(end_of_line).encode(encoding)
+        if indent:
+            return content.rstrip(os.linesep).encode(encoding)
 
-    def deserialize(self, source, prefixes=None, strict=False, as_attribute=None, as_list=None,
-                    as_attribute_of_element=None):
+        return content.encode(encoding)
+
+    def deserialize(self, source, prefixes=None, strict=False):
         doc = None
         if isinstance(source, basestring):
             if os.path.exists(source):
@@ -192,10 +186,7 @@ class Parser(object):
         elif hasattr(source, 'read'):
             doc = xdm.parse(source)
 
-        document = bridge.Document()
-        document.as_attribute = as_attribute or {}
-        document.as_list = as_list or {}
-        document.as_attribute_of_element = as_attribute_of_element or {}
+        document = Document()
 
         self.__deserialize_fragment(doc, document)
         
@@ -210,19 +201,19 @@ class Parser(object):
 import xml.sax as xs
 import xml.sax.saxutils as xss
 from xml.parsers import expat
-from bridge.filter import lookup
-import StringIO
+try:
+    import cStringIO as StringIO
+except ImportError:
+    import StringIO
+from time import time
 
 class IncrementalHandler(xss.XMLGenerator):
     def __init__(self, out, encoding=ENCODING):
         xss.XMLGenerator.__init__(self, out, encoding) 
-        self._root = bridge.Document()
+        self._root = Document()
         self._current_el = self._root
         self._current_level = 0
         self._as_cdata = False
-        self.as_attribute = {}
-        self.as_list = {}
-        self.as_attribute_of_element = {}
 
     def reset(self):
         if self._root:
@@ -231,15 +222,12 @@ class IncrementalHandler(xss.XMLGenerator):
         if self._current_el:
             self._current_el.forget()
             self._current_el = None
-        self._root = bridge.Document()
+        self._root = Document()
         self._current_el = self._root
         self._current_level = 0
 
     def startDocument(self):
-        self._root = bridge.Document()
-        self._root.as_attribute = self.as_attribute
-        self._root.as_list = self.as_list
-        self._root.as_attribute_of_element = self.as_attribute_of_element
+        self._root = Document()
         self._current_el = self._root
         self._current_level = 0
         self._as_cdata = False
@@ -255,23 +243,28 @@ class IncrementalHandler(xss.XMLGenerator):
         return prefix, local
 
     def processingInstruction(self, target, data):
-        bridge.PI(target, data, self._current_el)
+        PI(target, data, self._current_el)
 
     def startElementNS(self, name, qname, attrs):
+        #print "$%s%s: %f" % (" " * self._current_level, name, time())
         uri, local_name = name
         prefix = None
         if uri and uri in self._current_context:
             prefix = self._current_context[uri]
-        e = bridge.Element(local_name, prefix=prefix, namespace=uri, parent=self._current_el)
+        #print "$$%s%s: %f" % (" " * self._current_level, name, time())
+        e = Element(local_name, prefix=prefix, namespace=uri, parent=self._current_el)
+        #print "$$$%s%s: %f" % (" " * self._current_level, name, time())
         
-        for name, value in attrs.items():
+        for name, value in iter(attrs.items()):
             (namespace, local_name) = name
             qname = attrs.getQNameByName(name)
             prefix = self._split_qname(qname)[0]
-            bridge.Attribute(local_name, value, prefix, namespace, e)
+            Attribute(local_name, value, prefix, namespace, e)
+        #print "$$$$%s%s: %f" % (" " * self._current_level, name, time())
         
         self._current_el = e
         self._current_level = self._current_level + 1
+        #print "$$$$$%s%s: %f" % (" " * self._current_level, name, time())
         
     def endElementNS(self, name, qname):
         self._current_level = current_level = self._current_level - 1
@@ -286,7 +279,7 @@ class IncrementalHandler(xss.XMLGenerator):
         self._as_cdata = False
 
     def comment(self, data):
-        bridge.Comment(data, self._current_el)
+        Comment(data, self._current_el)
         
     def startCDATA(self):
         self._as_cdata = True
@@ -301,7 +294,7 @@ class IncrementalHandler(xss.XMLGenerator):
         pass
     
     def doc(self):
-        """Returns the root bridge.Document instance of the parsed
+        """Returns the root Document instance of the parsed
         document. You have to call the close() method of the
         parser first.
         """
@@ -334,7 +327,7 @@ class DispatchHandler(IncrementalHandler):
 
         Here's an example:
 
-        >>> from bridge.parser import DispatchParser
+        >>> from parser import DispatchParser
         >>> p = DispatchParser()
         >>> def dispatch(e):
         ...     print e.xml()
@@ -349,7 +342,7 @@ class DispatchHandler(IncrementalHandler):
         Alternatively this can even be used as a generic parser. If you
         don't need dispatching you simply call ``disable_dispatching``.
 
-        >>> from bridge.parser import DispatchParser
+        >>> from parser import DispatchParser
         >>> p = DispatchParser()
         >>> h.disable_dispatching()
         >>> p.feed('<r><b/></r>')
@@ -379,7 +372,7 @@ class DispatchHandler(IncrementalHandler):
         self.default_dispatcher = None
 
     def register_default_start_element(self, handler):
-        self.default_dispatcher_start_handler = handler
+        self.default_dispatcher_start_element = handler
 
     def unregister_default_start_element(self):
         self.default_dispatcher_start_element = None
@@ -407,7 +400,7 @@ class DispatchHandler(IncrementalHandler):
         are at level 1.
 
         The ``dispatcher`` is a callable object only taking
-        one parameter, a bridge.Element instance.
+        one parameter, a Element instance.
         """
         self.enable_level_dispatching = True
         self._level_dispatchers[level] = dispatcher
@@ -429,7 +422,7 @@ class DispatchHandler(IncrementalHandler):
         parameter.
 
         The ``dispatcher`` is a callable object only taking
-        one parameter, a bridge.Element instance.
+        one parameter, a Element instance.
         """
         self.enable_element_dispatching = True
         self._element_dispatchers[(namespace, local_name)] = dispatcher
@@ -457,7 +450,7 @@ class DispatchHandler(IncrementalHandler):
         parameter.
 
         The ``dispatcher`` is a callable object only taking
-        one parameter, a bridge.Element instance.
+        one parameter, a Element instance.
         """
         self.enable_element_by_level_dispatching = True
         self._element_level_dispatchers[(level, (namespace, local_name))] = dispatcher
@@ -483,51 +476,33 @@ class DispatchHandler(IncrementalHandler):
             self.enable_dispatching_by_path = False
 
     def startElementNS(self, name, qname, attrs):
+        #print "%s: %f" % (name, time())
         IncrementalHandler.startElementNS(self, name, qname, attrs)
-        if self.default_dispatcher_start_handler:
-            self.default_dispatcher_start_handler(self._current_el)
+        if self.default_dispatcher_start_element:
+            self.default_dispatcher_start_element(self._current_el)
 
     def endElementNS(self, name, qname):
+        #print "#%s%s: %f" % (" " * self._current_level, name, time())
         self._current_level = current_level = self._current_level - 1
+        if not self._current_el:
+            return
         current_element = self._current_el
+
         dispatched = False
         
-        if self.enable_level_dispatching:
-            if current_level in self._level_dispatchers:
-                self._level_dispatchers[current_level](current_element)
-                dispatched = True
         if self.enable_element_dispatching:
             pattern = (current_element.xml_ns, current_element.xml_name)
             if pattern in self._element_dispatchers:
                 self._element_dispatchers[pattern](current_element)
                 dispatched = True
-            else:
-                pattern = (ANY_NAMESPACE, current_element.xml_name)
-                if pattern in self._element_dispatchers:
-                    self._element_dispatchers[pattern](current_element)
-                    dispatched = True
-        if self.enable_element_by_level_dispatching:
-            pattern = (current_level, (current_element.xml_ns, current_element.xml_name))
-            if pattern in self._element_level_dispatchers:
-                self._element_level_dispatchers[pattern](current_element)
-                dispatched = True 
-            else:
-                pattern = pattern = (current_level, (ANY_NAMESPACE, current_element.xml_name))
-                if pattern in self._element_level_dispatchers:
-                    self._element_level_dispatchers[pattern](current_element)
-                    dispatched = True   
-        if self.enable_dispatching_by_path:
-            for path in self._path_dispatchers:
-                match_found = current_element.filtrate(lookup, path=path)
-                if match_found:
-                    self._path_dispatchers[path](match_found)
-                    dispatched = True       
-                    break
 
-        if not dispatched and callable(self.default_dispatcher):
+        #print "##%s%s: %f" % (" " * self._current_level, name, time())
+        if not dispatched and self.default_dispatcher:
             self.default_dispatcher(current_element)
+        #print "###%s%s: %f" % (" " * self._current_level, name, time())
             
         self._current_el = self._current_el.xml_parent
+        #print "####%s%s: %f" % (" " * self._current_level, name, time())
 
 class DispatchParser(object):
     def __init__(self, out=None, encoding=ENCODING):
@@ -574,7 +549,7 @@ class DispatchParser(object):
         are at level 1.
 
         The ``dispatcher`` is a callable object only taking
-        one parameter, a bridge.Element instance.
+        one parameter, a Element instance.
         """
         self.handler.register_at_level(level, dispatcher)
 
@@ -592,7 +567,7 @@ class DispatchParser(object):
         parameter.
 
         The ``dispatcher`` is a callable object only taking
-        one parameter, a bridge.Element instance.
+        one parameter, a Element instance.
         """
         self.handler.register_on_element(local_name, dispatcher, namespace)
 
@@ -615,7 +590,7 @@ class DispatchParser(object):
         parameter.
 
         The ``dispatcher`` is a callable object only taking
-        one parameter, a bridge.Element instance.
+        one parameter, a Element instance.
         """
         self.handler.register_on_element_per_level(local_name, level, dispatcher, namespace)
 

@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-__version__ = "0.3.9"
+__version__ = "0.4.0"
 __authors__ = ["Sylvain Hellegouarch (sh@defuze.org)"]
 __contributors__ = ['David Turner']
-__date__ = "2009/07/01"
+__date__ = "2009/07/10"
 __copyright__ = """
 Copyright (c) 2006, 2007, 2008, 2009 Sylvain Hellegouarch
 All rights reserved.
@@ -92,35 +92,15 @@ class Attribute(object):
     """
 
     encoding = ENCODING
-    as_attribute_of_element = None
-    
     def __init__(self, name=None, value=None, prefix=None, namespace=None, parent=None):
-        if value and not isinstance(value, unicode):
-            raise TypeError("Attribute's (%s) value must be an unicode object or None. Got %s instead." % (name, str(type(value))))
-        
         self.xml_parent = parent
         self.xml_ns = namespace
-        self._local_name = name
-        if name:
-            name = name.replace('-', '_').replace('.', '_')
         self.xml_name = name
         self.xml_text = value
         self.xml_prefix = prefix
-        self.xml_ns = namespace
 
-        self.as_attribute_of_element = {}
-        if self.xml_parent and self.xml_parent.xml_root.as_attribute_of_element:
-            self.as_attribute_of_element.update(self.xml_parent.xml_root.as_attribute_of_element)
-        elif isinstance(Attribute.as_attribute_of_element, dict):
-            self.as_attribute_of_element.update(Attribute.as_attribute_of_element)
-            
         if self.xml_parent:
-            self.xml_parent.xml_attributes.append(self)
-
-            attrs = self.as_attribute_of_element.get(self.xml_ns, [])
-            if self.xml_name in attrs:
-                if not hasattr(self.xml_parent, name):
-                    setattr(self.xml_parent, name, self.xml_text)
+            self.xml_parent.xml_attributes[(self.xml_ns, self.xml_name)] = self
 
     def __unicode__(self):
         if self.xml_text:
@@ -158,60 +138,23 @@ class Element(object):
     """
     parser = None
     encoding = ENCODING
-    as_list = None
-    as_attribute = None
     
     def __init__(self, name=None, content=None, attributes=None, prefix=None, namespace=None, parent=None):
-        
-        if content and not isinstance(content, unicode):
-            raise TypeError("Element's content (%s) must be an unicode object or None. Got %s instead." % (name, str(type(content))))
-
-        self.as_attribute = {}
-        self.as_list= {}
-        self.as_attribute_of_element = {}
-
         self._root = None
         self.xml_parent = parent
         self.xml_prefix = prefix
         self.xml_ns = namespace
-        self._local_name = name
-        if name:
-            name = name.replace('-', '_').replace('.', '_')
         self.xml_name = name
         self.xml_text = content
         self.xml_children = []
-        self.xml_attributes = []
+        self.xml_attributes = {}
         self.as_cdata = False
-
-        if self.xml_root and self.xml_root.as_attribute:
-            self.as_attribute.update(self.xml_root.as_attribute)
-        elif isinstance(Element.as_attribute, dict):
-            self.as_attribute.update(Element.as_attribute)
-
-        if self.xml_root and self.xml_root.as_list:
-            self.as_list.update(self.xml_root.as_list)
-        elif isinstance(Element.as_list, dict):
-            self.as_list.update(Element.as_list)
-
-        if self.xml_root and self.xml_root.as_attribute_of_element:
-            self.as_attribute_of_element.update(self.xml_root.as_attribute_of_element)
 
         if self.xml_parent:
             self.xml_parent.xml_children.append(self)
 
-            as_attr_elts = self.as_attribute.get(self.xml_ns, [])
-            as_list_elts = self.as_list.get(self.xml_ns, [])
-
-            if self.xml_name in as_attr_elts:
-                setattr(self.xml_parent, name, self)
-            elif self.xml_name in as_list_elts:
-                if not hasattr(self.xml_parent, name):
-                    setattr(self.xml_parent, name, [])
-                els = getattr(self.xml_parent, name)
-                els.append(self)
-
         if attributes and isinstance(attributes, dict):
-            for name in attributes:
+            for name in iter(attributes):
                 Attribute(name, attributes[name], parent=self)
 
     def __repr__(self):
@@ -243,37 +186,14 @@ class Element(object):
         """
         Creates a new instance of the current element. The entire subtree is cloned as well.
         """
-        return Element.load(self.xml(encoding=self.encoding, omit_declaration=True),
-                            as_attribute=self.as_attribute, as_list=self.as_list,
-                            as_attribute_of_element=self.as_attribute_of_element)
+        return Element.load(self.xml(encoding=self.encoding, omit_declaration=True))
         
-    def __delattr__(self, name):
-        """
-        Deletes `name` instance of Element. It will also removes it
-        from its parent children and attributes.
-        """
-        if not hasattr(self, name):
-            raise AttributeError, name
-        
-        attr = getattr(self, name)
-        if isinstance(attr, Element):
-            if attr in self.xml_children:
-                self.xml_children.remove(attr)
-        elif isinstance(attr, Attribute):
-            if attr in self.xml_attributes:
-                self.xml_attributes.remove(attr)
-
-        del self.__dict__[name]
-
     def get_root(self):
         if self._root is not None:
             return self._root
 
         if isinstance(self.xml_parent, Document):
             self._root = self
-            self.as_attribute.update(self.xml_parent.as_attribute)
-            self.as_list.update(self.xml_parent.as_list)
-            self.as_attribute_of_element.update(self.xml_parent.as_attribute_of_element)
             return self
         
         if self.xml_parent is None:
@@ -282,79 +202,31 @@ class Element(object):
         return self.xml_parent.get_root()
     xml_root = property(get_root, doc="Retrieve the top level element")
 
-    def get_attribute(self, name):
-        """
-        Goes through this element's attributes and match the first one called after `name`.
-        
-        Returns `None` when not found.
-        """
-        for attr in self.xml_attributes:
-            if attr.xml_name == name:
-                return attr
-            
-    def get_attribute_value(self, name, default=None):
-        """
-        Returns the value of the first attribute matching `name`.
-
-        Returns `default` when not found.
-        """
-        for attr in self.xml_attributes:
-            if attr.xml_name == name:
-                return unicode(attr)
+    def get_attribute_value(self, qname, default=None):
+        if qname in self.xml_attributes:
+            return unicode(self.xml_attributes[qname])
+        elif (None, qname) in self.xml_attributes:
+            return unicode(self.xml_attributes[(None, qname)])
         return default
-    
-    def set_attribute_value(self, name, value):
+
+    def set_attribute_value(self, qname, value):
         """
         Sets the attribute value. If the attribute does not
         exist it is created and set with `name`and `value`.
-        """
-        found = False
-        for attr in self.xml_attributes:
-            if attr.xml_name == name:
-                attr.xml_text = value
-                found = True
-                break
 
-        if not found:
-            Attribute(name, value, parent=self)
-            
-    def get_attribute_ns(self, name, namespace):
-        for attr in self.xml_attributes:
-            if (attr.xml_name == name) and (attr.xml_ns == namespace):
+        Returns the set attribute instance.
+        """
+        if isinstance(qname, str):
+            qname = (None, qname)
+        name = qname[1]
+        for attr_ns, attr_name in self.xml_attributes:
+            if attr_name == name:
+                attr = self.xml_attributes[qname]                    
+                attr.xml_text = value
                 return attr
 
-    def get_attribute_ns_value(self, name, namespace, default=None):
-        for attr in self.xml_attributes:
-            if (attr.xml_name == name) and (attr.xml_ns == namespace):
-                return unicode(attr)
-        return default
-    
-    def set_attribute_ns_value(self, name, value, namespace=None, prefix=None):
-        """Sets the attribute value in the given namespace. If the attribute does not
-        exist it is created and set"""
-        found = False
-        for attr in self.xml_attributes:
-            if (attr.xml_name == name) and (attr.xml_ns == namespace):
-                attr.xml_text = value
-                found = True
-                break
-
-        if not found:
-            Attribute(name, value, prefix=prefix, namespace=namespace, parent=self)
+        return Attribute(name, value, namespace=qname[0], parent=self)
             
-    def has_element(self, name, ns=None):
-        """
-        Checks if this element has `name` attribute
-
-        :Parameters:
-          - `name`: local name of the element
-          - `ns`: namespace of the element
-        """
-        obj = getattr(self, name, None)
-        if obj:
-            return obj.xml_ns == ns
-        return False
-
     def has_child(self, name, ns=None):
         """
         Checks if this element has a child named 'name' in its children elements
@@ -363,7 +235,11 @@ class Element(object):
           - `name`: local name of the element
           - `ns`: namespace of the element
         """
-        return self.filtrate(fetch_child, child_name=name, child_ns=ns) != None
+        for child in self.xml_children:
+            if child.xml_name == name and child.xml_ns == ns:
+                return True
+
+        return False
     
     def get_child(self, name, ns=None):
         """
@@ -373,18 +249,21 @@ class Element(object):
           -`name`: local name of the element
           - `ns`: namespace of the element
         """
-        return self.filtrate(fetch_child, child_name=name, child_ns=ns)
+        for child in self.xml_children:
+            if child.xml_name == name and child.xml_ns == ns:
+                return child
     
-    def get_children(self, name, ns=None, recursive=False):
+    def get_children(self, name, ns=None):
         """
-        Returns the all children of this element named 'name'
+        Yields all children of this element named 'name'
         
         :Parameters:
           - `name`: local name of the element
           - `ns`: namespace of the element
-          - `recursive`: if True this will iterate through the entire tree
         """
-        return self.filtrate(fetch_children, child_name=name, child_ns=ns, recursive=recursive)
+        for child in self.xml_children:
+            if child.xml_name == name and child.xml_ns == ns:
+                yield child
 
     def get_children_without(self, types=None):
         """
@@ -443,16 +322,11 @@ class Element(object):
         Deletes this instance of Element. It will also removes it
         from its parent children and attributes.
         """
-        self.as_attribute = {}
-        self.as_list = {}
-        self.as_attribute_of_element = {}
-
         self._root = None
 
-        for attr in self.xml_attributes:
-            attr.as_attribute_of_element = {}
-            attr.xml_parent = None
-        self.xml_attributes = []
+        for key in iter(self.xml_attributes):
+            self.xml_attributes[key].xml_parent = None
+        self.xml_attributes = {}
 
         for child in self.xml_children:
             if isinstance(child, Element):
@@ -471,12 +345,6 @@ class Element(object):
         """
         if self in element.xml_children:
             element.xml_children.remove(self)
-        if hasattr(element, self.xml_name):
-            obj = getattr(element, self.xml_name)
-            if isinstance(obj, list):
-                obj.remove(self)
-            elif isinstance(obj, Element):
-                del obj
         
     def insert_before(self, before_element, element):
         """
@@ -568,9 +436,6 @@ class Element(object):
         :Parameters:
           - `source`: an XML string, a file path or a file object
           - `prefixes`: dictionnary of prefixes of the form {'prefix': 'ns'}
-          - `as_attribute`: dictionary of element names to set as attribute of their parent
-          - `as_list`: dictionary of element names to set into a list of their parent
-          - `as_attribute_of_element`: dictionary of attribute names to set as attribute of their parent
 
         If any of those last three parameters are provided they will take
         precedence over those set on the Element and Attribute class.
@@ -583,8 +448,7 @@ class Element(object):
             self.parser = parser
             parser = parser()
 
-        return parser.deserialize(source, prefixes=prefixes, as_attribute=as_attribute,
-                               as_list=as_list, as_attribute_of_element=as_attribute_of_element)
+        return parser.deserialize(source, prefixes=prefixes)
     load = classmethod(load)
 
     def __update_prefixes(self, element, dst, srcns, dstns, update_attributes):
