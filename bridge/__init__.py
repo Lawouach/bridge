@@ -136,7 +136,6 @@ class Element(object):
       - `namespace`: XML namespace attached to that element (unicode)
       - `parent`: Parent element of this element.
     """
-    parser = None
     encoding = ENCODING
     
     def __init__(self, name=None, content=None, attributes=None, prefix=None, namespace=None, parent=None):
@@ -403,7 +402,7 @@ class Element(object):
 
         return False
 
-    def xml(self, indent=True, encoding=ENCODING, prefixes=None, omit_declaration=False, parser=None):
+    def xml(self, indent=True, encoding=ENCODING, prefixes=None, omit_declaration=False):
         """
         Serializes this element as a string.
 
@@ -412,43 +411,30 @@ class Element(object):
           - `encoding`: encoding to use during the serialization process
           - `prefixes`: dictionnary of prefixes of the form {'prefix': 'ns'}
           - `omit_declaration`: prevent the result to start with the XML declaration
-          - `parser`: instance of an existing parser, if not provided the default one will be used
 
         :Returns:
           The XML string representing the current element.
         """
-        if not parser and self.parser:
-            parser = self.parser()
-        elif not self.parser:
-            from bridge.parser import get_first_available_parser
-            parser = get_first_available_parser()
-            self.parser = parser
-            parser = parser()
+        from bridge.parser import get_first_available_parser
+        parser = get_first_available_parser()()
+        result = parser.serialize(self, indent=indent, encoding=encoding,
+                                 prefixes=prefixes, omit_declaration=omit_declaration)
+        del parser
+        return result
 
-        return parser.serialize(self, indent=indent, encoding=encoding,
-                                prefixes=prefixes, omit_declaration=omit_declaration)
-
-    def load(self, source, prefixes=None, as_attribute=None, as_list=None,
-             as_attribute_of_element=None, parser=None):
+    def load(self, source, prefixes=None):
         """
         Load source into an Element instance
 
         :Parameters:
           - `source`: an XML string, a file path or a file object
           - `prefixes`: dictionnary of prefixes of the form {'prefix': 'ns'}
-
-        If any of those last three parameters are provided they will take
-        precedence over those set on the Element and Attribute class.
         """
-        if not parser and self.parser:
-            parser = self.parser()
-        elif not self.parser:
-            from bridge.parser import get_first_available_parser
-            parser = get_first_available_parser()
-            self.parser = parser
-            parser = parser()
-
-        return parser.deserialize(source, prefixes=prefixes)
+        from bridge.parser import get_first_available_parser
+        parser = get_first_available_parser()()
+        result = parser.deserialize(source, prefixes=prefixes)
+        del parser
+        return result
     load = classmethod(load)
 
     def __update_prefixes(self, element, dst, srcns, dstns, update_attributes):
