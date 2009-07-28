@@ -202,17 +202,9 @@ class DispatchHandler(object):
         self._current_el = self._current_el.xml_parent
 
 class DispatchParser(object):
-    def __init__(self, out=None, encoding=ENCODING):
-
-        self._handler = DispatchHandler()
-
-        self._bufferise = False
-        self._last = ''
-        self._last_etype = None
+    def __init__(self):
         self._depth = 0
-
         self._buffer = ''
-        self._pos = 0
 
         self._fed = PipedOutputStream()
         self._feeder = BufferedInputStream(PipedInputStream(self._fed))
@@ -224,37 +216,45 @@ class DispatchParser(object):
         self._er = self._ipf.createXMLEventReader(self._sr)
 
     def __del__(self):
+        self._close()
+        
+    def close(self):
         self._fed.close()
         self._feeder.close()
         self._er.close()
         self._sr.close()
         self._ipf = None
-
-    def _parse(self, chunk):
-        print chunk
+        
+    def _parse(self, chunk, fragment=False):
         self._fed.write(chunk)
         er = self._er
+        consumed = False
         while er.hasNext():
+            if not fragment and self._feeder.available() == 0 and consumed:
+                break
             event = er.next()
             etype = event.getEventType()
-            print "###", self._depth, etype, event, chunk
             if etype == XMLEvent.START_ELEMENT:
+                consumed = True
                 self._depth += 1
-                self._bufferise = False
                 element = event.asStartElement()
                 print "S", element.getName(), element.getAttributes()
             elif etype == XMLEvent.END_ELEMENT:
+                consumed = True
                 self._depth -= 1
-                self._bufferise = False
                 element = event.asEndElement()
                 print "E", element.getName()
                 if self._depth == 0:
                     break
             elif etype == XMLEvent.CHARACTERS:
-                pass
+                consumed = False
+                text = event.asCharacters().getData()
+                print "C", text
             elif etype == XMLEvent.COMMENT:
+                consumed = True
                 pass
             elif etype == XMLEvent.PROCESSING_INSTRUCTION:
+                consumed = True
                 pass
             elif etype == XMLEvent.START_DOCUMENT:
                 pass
@@ -279,13 +279,13 @@ class DispatchParser(object):
                 if posb > -1:
                     found = True
                     pos = posb
-                    self._parse(self._buffer[last_posb:posb+1])
+                    self._parse(self._buffer[last_posb:posb+1])  
                     last_posb = posb+1
                 
             if not found:
                 break
                 
-        self._buffer = self._buffer[last_posb:len(self._buffer)]
+        self._buffer = self._buffer[last_posb:]
 
     def register_default(self, handler):
         self.handler.register_default(handler)
