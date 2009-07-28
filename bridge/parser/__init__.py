@@ -15,6 +15,12 @@ def get_first_available_parser():
             return Parser
         except ImportError:
             pass
+    elif sys.platform[:4] == 'java':
+        try:
+            from bridge.parser.bridge_java import Parser
+            return Parser
+        except ImportError:
+            pass
     
     from bridge.parser.bridge_default import Parser
     
@@ -22,5 +28,7 @@ def get_first_available_parser():
 
 if sys.platform == 'cli':
     from bridge.parser.bridge_dotnet import Parser, IncrementalParser, DispatchParser
+elif sys.platform[:4] == 'java':
+    from bridge.parser.bridge_java import Parser, IncrementalParser, DispatchParser
 else:
     from bridge.parser.bridge_default import Parser, IncrementalParser, DispatchParser
