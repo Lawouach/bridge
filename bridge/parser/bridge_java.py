@@ -326,7 +326,6 @@ class IncrementalParser(object):
             if etype == XMLEvent.START_ELEMENT:
                 consumed = False
                 if not chunk.endswith('/>'):
-                    print chunk, consumed
                     consumed = True
                 self._depth += 1
                 element = event.asStartElement()
