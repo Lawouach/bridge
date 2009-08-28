@@ -31,19 +31,20 @@ class Parser(object):
                 Attribute(attr.localName, attr.value,
                           attr.prefix, attr.namespaceURI, parent)
 
+        children_num = len(current.childNodes)
         children = iter(current.childNodes)
         for child in children:
             nt = child.nodeType
             if nt == xd.Node.TEXT_NODE:
                 data = escape(child.data)
-                if len(children) == 1:
+                if children_num == 1:
                     parent.xml_text = data
                 else:
                     parent.xml_children.append(data)
             elif nt == xd.Node.CDATA_SECTION_NODE:
                 parent.as_cdata = True
                 data = child.data
-                if len(children) == 1:
+                if children_num == 1:
                     parent.xml_text = data
                 else:
                     parent.xml_children.append(data)
