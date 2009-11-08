@@ -3,6 +3,7 @@
 import os
 import os.path
 from StringIO import StringIO
+from time import time
 
 __all__ = ['Parser', 'IncrementalParser', 'DispatchParser']
 
@@ -13,11 +14,7 @@ import xml.sax.handler as xsh
 import xml.sax.saxutils as xss
 from xml.sax.saxutils import quoteattr, escape, unescape
 
-from bridge import Element
-from bridge import Attribute
-from bridge import PI, Comment, Document
-
-from bridge import ENCODING
+from bridge import Element, ENCODING, Attribute, PI, Comment, Document
 from bridge.common import ANY_NAMESPACE
 
 class Parser(object):
@@ -483,11 +480,11 @@ class DispatchHandler(IncrementalHandler):
             self.default_dispatcher_start_element(self._current_el)
 
     def endElementNS(self, name, qname):
-        #print "#%s%s: %f" % (" " * self._current_level, name, time())
         self._current_level = current_level = self._current_level - 1
         if not self._current_el:
             return
         current_element = self._current_el
+        parent_element = self._current_el.xml_parent
 
         dispatched = False
         
@@ -496,14 +493,11 @@ class DispatchHandler(IncrementalHandler):
             if pattern in self._element_dispatchers:
                 self._element_dispatchers[pattern](current_element)
                 dispatched = True
-
-        #print "##%s%s: %f" % (" " * self._current_level, name, time())
+                
         if not dispatched and self.default_dispatcher:
             self.default_dispatcher(current_element)
-        #print "###%s%s: %f" % (" " * self._current_level, name, time())
             
-        self._current_el = self._current_el.xml_parent
-        #print "####%s%s: %f" % (" " * self._current_level, name, time())
+        self._current_el = parent_element
 
 class DispatchParser(object):
     def __init__(self, out=None, encoding=ENCODING):

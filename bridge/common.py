@@ -25,28 +25,11 @@ ATOM10_NS = u'http://www.w3.org/2005/Atom'
 ATOMPUB_NS = u'http://www.w3.org/2007/app'
 THR_NS = u'http://purl.org/syndication/thread/1.0'
 
-atom_as_attr = {ATOM10_NS: ['feed', 'id', 'title', 'updated', 'published', 'icon', 'logo', 'generator',
-                            'rights', 'subtitle', 'content', 'summary', 'name', 'uri', 'email'],
-                ATOMPUB_NS: ['edited'],
-                THR_NS: ['in-reply-to', 'total']}
-
-atom_as_list = {ATOM10_NS: ['author', 'contributor', 'category', 'link', 'entry'],
-                ATOMPUB_NS: ['collection', 'workspace', 'categories', 'accept']}
-
-atom_attribute_of_element = {None: ['type', 'term', 'href', 'rel', 'scheme', 'label',
-                                    'title', 'length', 'hreflang' 'src', 'ref'],
-                             THR_NS: ['count']}
-
 ###########################################################
 # Dublin Core
 ###########################################################
 DC_NS = u'http://purl.org/dc/elements/1.1/'
 DC_PREFIX = u'dc'
-
-dc_as_attr = {DC_NS: ['author', 'coverage', 'creator',
-                      'date', 'description', 'format', 'identifier',
-                      'language', 'publisher', 'relation', 'rights',
-                      'source', 'subject', 'title', 'type']}
 
 ###########################################################
 # Open Document Format
@@ -69,23 +52,11 @@ ODF_DRAWING_PREFIX = u'drawing'
 ODF_PRESENTATION_NS = u'urn:oasis:names:tc:opendocument:xmlns:presentation:1.0'
 ODF_PRESENTATION_PREFIX = u'presentation'
 
-odf_meta_as_attr = {ODF_META_NS: ['document-statistic', 'creation-date']}
-odf_meta_as_list = {ODF_META_NS: ['keyword']}
-
-odf_office_as_attr = {ODF_OFFICE_NS: ['meta']}
-odf_office_as_attr.update(odf_meta_as_attr)
-odf_office_as_attr.update(dc_as_attr)
-
 ###########################################################
 # XHTML
 ###########################################################
 XHTML10_NS = u'http://www.w3.org/1999/xhtml'
 XHTML10_PREFIX = u'xhtml'
-
-xhtml_as_attr = {XHTML10_NS: ['html', 'head', 'body', 'title']}
-xhtml_as_list = {XHTML10_NS: ['meta', 'link', 'script']}
-xhtml_attribute_of_element = {None: ['content', 'name', 'lang']}
-
 
 ###########################################################
 # XMPP/Jabber
@@ -94,10 +65,6 @@ xhtml_attribute_of_element = {None: ['content', 'name', 'lang']}
 # see http://www.xmpp.org/rfcs/rfc3920.html
 XMPP_CLIENT_NS = u'jabber:client'
 XMPP_CLIENT_PREFIX = u'client'
-
-xmpp_client_as_attr = {XMPP_CLIENT_NS: ['message', 'subject', 'body', 'thread', 'presence', 'iq']}
-xmpp_client_as_list = {XMPP_CLIENT_NS: ['error']}
-xmpp_client_attribute_of_element = {None: ['from', 'id', 'to', 'type', 'show', 'status', 'priority']}
 
 # see http://www.xmpp.org/extensions/xep-0004.html
 XMPP_DATA_FORM_NS = u'jabber:x:data'
@@ -118,12 +85,6 @@ XMPP_PUBSUB_EVENT_PREFIX = u'pubsub'
 
 XMPP_OFFLINE_NS = u'http://jabber.org/protocol/offline'
 XMPP_OFFLINE_PREFIX = None
-
-xmpp_pubsub_as_attr = {XMPP_PUBSUB_NS: ['pubsub', 'create']}
-xmpp_pubsub_as_list = {XMPP_PUBSUB_NS: ['configure', 'subscribe', 'options', 'affiliations',
-                                        'items', 'publish', 'retract', 'subscription',
-                                        'subscriptions', 'unsubscribe', 'subscribe-options']}
-xmpp_pubsub_attribute_of_element = {None: ['subid']}
 
 # see http://www.xmpp.org/rfcs/rfc3920.html
 XMPP_STREAM_NS = u'http://etherx.jabber.org/streams'
@@ -235,19 +196,6 @@ XMPP_COMPONENT_ACCEPT_PREFIX = None
 
 XMPP_COMPONENT_CONNECT_NS = u"jabber:component:connect"
 XMPP_COMPONENT_CONNECT_PREFIX = None
-
-xmpp_as_attr = {}
-xmpp_as_attr.update(xmpp_client_as_attr)
-xmpp_as_attr.update(xmpp_pubsub_as_attr)
-xmpp_as_attr.update(xmpp_bind_as_attr)
-
-xmpp_as_list = {}
-xmpp_as_list.update(xmpp_client_as_list)
-xmpp_as_list.update(xmpp_pubsub_as_list)
-
-xmpp_attribute_of_element = {}
-xmpp_attribute_of_element.update(xmpp_client_attribute_of_element)
-xmpp_attribute_of_element.update(xmpp_pubsub_attribute_of_element)
 
 ###########################################################
 # RDF
