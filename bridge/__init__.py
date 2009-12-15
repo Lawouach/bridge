@@ -235,7 +235,7 @@ class Element(object):
           - `ns`: namespace of the element
         """
         for child in self.xml_children:
-            if child.xml_name == name and child.xml_ns == ns:
+            if isinstance(child, Element) and child.xml_name == name and child.xml_ns == ns:
                 return True
 
         return False
@@ -249,7 +249,7 @@ class Element(object):
           - `ns`: namespace of the element
         """
         for child in self.xml_children:
-            if child.xml_name == name and child.xml_ns == ns:
+            if isinstance(child, Element) and child.xml_name == name and child.xml_ns == ns:
                 return child
     
     def get_children(self, name, ns=None):
@@ -261,7 +261,7 @@ class Element(object):
           - `ns`: namespace of the element
         """
         for child in self.xml_children:
-            if child.xml_name == name and child.xml_ns == ns:
+            if isinstance(child, Element) and child.xml_name == name and child.xml_ns == ns:
                 yield child
 
     def get_children_without(self, types=None):
